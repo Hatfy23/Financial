@@ -554,6 +554,18 @@ main{
 .due-item .when{font-size:12px;color:var(--gold-stamp);margin-top:2px;}
 .due-item .amt{font-family:var(--font-mono);font-weight:700;font-size:13px;white-space:nowrap;}
 
+/* ---------- Multi-moeda ---------- */
+.dash-controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+.dash-controls .field{min-width:210px;}
+.dash-hint{font-size:11.5px;color:var(--ink-faint);flex:1 1 240px;line-height:1.5;padding-bottom:8px;}
+.dash-hint.warn{color:var(--gold-stamp);}
+.rates-strip{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:stretch;}
+.rate-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:9px 14px;display:flex;align-items:center;gap:14px;font-size:12.5px;}
+.rate-card .pair{font-weight:700;font-family:var(--font-mono);font-size:13px;}
+.rate-card .chg.up{color:var(--income);}
+.rate-card .chg.down{color:var(--expense);}
+.rate-refresh{align-self:center;}
+
 /* Modal */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.65);
@@ -724,6 +736,12 @@ select option{background:var(--surface-2);}
 
   <!-- DASHBOARD -->
   <div class="view active" id="view-dashboard">
+    <div class="dash-controls" id="dashControls" style="display:none;">
+      <div class="field"><label>Visão</label><select id="dashViewSel"></select></div>
+      <div class="field" id="dashDispWrap"><label>Mostrar em</label><select id="dashDispSel"></select></div>
+      <div class="dash-hint" id="dashHint"></div>
+    </div>
+    <div class="rates-strip" id="ratesStrip"></div>
     <div class="summary-strip">
       <div class="stamp-card saldo"><div class="label">Saldo atual</div><div class="value" id="sumSaldo">R$ 0,00</div></div>
       <div class="stamp-card receitas"><div class="label">Receitas do mês</div><div class="value" id="sumReceitas">R$ 0,00</div></div>
@@ -733,7 +751,7 @@ select option{background:var(--surface-2);}
 
     <div class="grid-2">
       <div class="card">
-        <div class="section-title">Saldo por conta</div>
+        <div class="section-title"><span>Saldo por conta</span><button class="btn small secondary" type="button" id="btnTransferDash">⇄ Transferir</button></div>
         <div id="dashAccountBalances"></div>
         <div id="dashAccountChart" style="margin-top:16px;"></div>
       </div>
@@ -783,7 +801,7 @@ select option{background:var(--surface-2);}
               <input type="text" id="txDesc" required placeholder="Ex: Supermercado, Salário...">
             </div>
             <div class="field">
-              <label>Valor (R$)</label>
+              <label id="txValorLbl">Valor (R$)</label>
               <input type="number" id="txValor" step="0.01" min="0" required placeholder="0,00">
             </div>
             <div class="field">
@@ -866,7 +884,7 @@ select option{background:var(--surface-2);}
               <input type="text" id="recDesc" required placeholder="Ex: Aluguel, Netflix, Salário...">
             </div>
             <div class="field">
-              <label>Valor (R$)</label>
+              <label id="recValorLbl">Valor (R$)</label>
               <input type="number" id="recValor" step="0.01" min="0" required>
             </div>
             <div class="field">
@@ -927,8 +945,12 @@ select option{background:var(--surface-2);}
               </select>
             </div>
             <div class="field">
-              <label>Valor aportado (R$)</label>
+              <label>Valor aportado</label>
               <input type="number" id="invValor" step="0.01" min="0" required>
+            </div>
+            <div class="field">
+              <label>Moeda</label>
+              <select id="invMoeda"></select>
             </div>
             <div class="field" style="grid-column:1/-1;">
               <label>Rendimento esperado</label>
@@ -1002,6 +1024,11 @@ select option{background:var(--surface-2);}
 
   <!-- PROJEÇÃO -->
   <div class="view" id="view-projecao">
+    <div class="dash-controls" id="projControls" style="display:none;">
+      <div class="field"><label>Visão</label><select id="projViewSel"></select></div>
+      <div class="field" id="projDispWrap"><label>Mostrar em</label><select id="projDispSel"></select></div>
+      <div class="dash-hint" id="projHint"></div>
+    </div>
     <div class="card">
       <div class="section-title">Projeção — próximos 6 meses</div>
       <div id="projChart"></div>
@@ -1091,12 +1118,27 @@ select option{background:var(--surface-2);}
             <label>Nome</label>
             <input type="text" id="accNome" required placeholder="Ex: Nubank, Carteira, Poupança...">
           </div>
+          <div class="field" style="margin-top:12px;">
+            <label>Moeda da conta</label>
+            <select id="accMoeda"></select>
+          </div>
           <button type="submit" class="btn full">Adicionar conta</button>
         </form>
       </div>
       <div class="card">
-        <div class="section-title">Contas cadastradas</div>
+        <div class="section-title"><span>Contas cadastradas</span><button class="btn small secondary" type="button" id="btnTransferAcc">⇄ Transferir</button></div>
         <div id="accountList"></div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span>Moedas e cotações</span><button class="btn small" type="button" id="btnRefreshRates">↻ Atualizar</button></div>
+        <form id="currencyForm" style="margin-bottom:12px;">
+          <div class="form-grid">
+            <div class="field"><label>Nova moeda (código)</label><input type="text" id="curCode" maxlength="3" placeholder="Ex: EUR, USD, GBP" style="text-transform:uppercase;"></div>
+            <div class="field" style="justify-content:flex-end;"><button type="submit" class="btn">Adicionar moeda</button></div>
+          </div>
+        </form>
+        <div id="currencyList"></div>
+        <p class="hint" style="margin-top:10px;">As cotações vêm da Frankfurter (cotações de referência, 1x por dia) e servem só como parâmetro visual: painel e totais convertidos. Seus saldos e transferências nunca usam a cotação — valem os valores que você digita. Moeda base: BRL (orçamentos e projeção).</p>
       </div>
     </div>
 
@@ -1159,7 +1201,7 @@ select option{background:var(--surface-2);}
           <select id="qkTipo"><option value="expense">Despesa</option><option value="income">Receita</option></select>
         </div>
         <div class="field">
-          <label>Valor (R$)</label>
+          <label>Valor</label>
           <input type="number" id="qkValor" step="0.01" min="0" placeholder="0,00">
         </div>
         <div class="field" style="grid-column:1/-1;">
@@ -1192,7 +1234,7 @@ select option{background:var(--surface-2);}
           <select id="edTipo"><option value="expense">Despesa</option><option value="income">Receita</option></select>
         </div>
         <div class="field">
-          <label>Valor (R$)</label>
+          <label id="edValorLbl">Valor (R$)</label>
           <input type="number" id="edValor" step="0.01" min="0" required>
         </div>
         <div class="field">
@@ -1248,7 +1290,7 @@ select option{background:var(--surface-2);}
     <div class="modal-head"><h3 id="lcTitle">Lançar recorrência</h3><button class="modal-close" type="button" data-close-modal="launchModal">×</button></div>
     <form id="launchForm">
       <div class="field">
-        <label>Valor deste mês (R$)</label>
+        <label id="lcValorLbl">Valor deste mês (R$)</label>
         <input type="number" id="lcValor" step="0.01" min="0" required>
         <p class="hint" id="lcDefaultHint"></p>
         <label class="check-row" id="lcUpdateDefaultWrap" style="display:none;"><input type="checkbox" id="lcUpdateDefault"> Atualizar também o valor padrão da recorrência</label>
@@ -1304,6 +1346,25 @@ select option{background:var(--surface-2);}
   </div>
 </div>
 
+<!-- Transfer modal -->
+<div class="modal-overlay" id="transferModal">
+  <div class="modal">
+    <div class="modal-head"><h3>⇄ Transferir entre contas</h3><button class="modal-close" type="button" data-close-modal="transferModal">×</button></div>
+    <form id="transferForm">
+      <div class="form-grid">
+        <div class="field"><label>De</label><select id="tfFrom"></select></div>
+        <div class="field"><label>Para</label><select id="tfTo"></select></div>
+        <div class="field"><label id="tfOutLbl">Valor que saiu</label><input type="number" id="tfOut" step="0.01" min="0" required></div>
+        <div class="field" id="tfInWrap"><label id="tfInLbl">Valor que entrou</label><input type="number" id="tfIn" step="0.01" min="0"></div>
+        <div class="field"><label>Data</label><input type="date" id="tfDate" required></div>
+        <div class="field"><label>Notas (opcional)</label><input type="text" id="tfNote" placeholder="Ex: Wise, IOF incluso"></div>
+      </div>
+      <p class="hint" id="tfHint" style="margin-top:8px;"></p>
+      <button type="submit" class="btn full" style="margin-top:12px;">Registrar transferência</button>
+    </form>
+  </div>
+</div>
+
 <!-- Photo modal -->
 <div class="modal-overlay" id="photoModal">
   <div class="modal">
@@ -1347,7 +1408,13 @@ try{
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function fmtBRL(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+const BASE = 'BRL'; // moeda base (orçamentos, projeção)
+function fmtMoney(v,cur){
+  cur = cur || 'BRL';
+  try{ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:cur}); }
+  catch(e){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+cur; }
+}
+function fmtBRL(v){ return fmtMoney(v,'BRL'); }
 function monthKey(dateStr){ return dateStr.slice(0,7); }
 function monthLabel(key){
   const [y,m] = key.split('-');
@@ -1573,7 +1640,8 @@ function fillAccountSelects(){
   ['txConta','recConta','cardConta'].forEach(id=>{
     const sel = document.getElementById(id);
     const prev = sel.value;
-    sel.innerHTML = accs.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+    const multi = allCurrencies().length>1;
+    sel.innerHTML = accs.map(a=>`<option value="${a.id}">${esc(a.name)}${multi?` (${a.currency||BASE})`:''}</option>`).join('');
     if(accs.some(a=>a.id===prev)) sel.value = prev;
   });
 }
@@ -1736,7 +1804,7 @@ document.getElementById('investForm').addEventListener('submit', (e)=>{
   if(!nome || isNaN(valor) || valor<=0){ toast('Preencha os campos corretamente'); return; }
   const yieldMode = document.getElementById('invYieldMode').value;
   const inv = {
-    id: uid(), name:nome, type:tipo, initialAmount:valor, currentAmount:valor,
+    id: uid(), name:nome, type:tipo, currency: document.getElementById('invMoeda').value || BASE, initialAmount:valor, currentAmount:valor,
     date: todayISO(), contributions:[{date:todayISO(), amount:valor}],
     yieldMode, cdiAnnual:null, ratePct:null, ipcaAnnual:null, withdrawDate:null
   };
@@ -1830,7 +1898,13 @@ function launchRecurring(recId, monthKeyStr){ openLaunchModal(recId, monthKeyStr
 window.launchRecurring = launchRecurring;
 
 function deleteTx(id){
-  Store.data.transactions = Store.data.transactions.filter(t=>t.id!==id);
+  const tx = Store.data.transactions.find(t=>t.id===id);
+  if(tx && tx.transferId){
+    if(!confirm('Esta é uma transferência entre contas. Excluir remove as duas pontas (saída e entrada). Continuar?')) return;
+    Store.data.transactions = Store.data.transactions.filter(t=>t.transferId!==tx.transferId);
+  } else {
+    Store.data.transactions = Store.data.transactions.filter(t=>t.id!==id);
+  }
   Store.save();
   renderAll();
 }
@@ -1844,7 +1918,7 @@ function deleteRecurring(id){
 window.deleteRecurring = deleteRecurring;
 
 function addContribution(investId){
-  const val = prompt('Valor do novo aporte (R$):');
+  const val = prompt('Valor do novo aporte (na moeda do investimento):');
   const n = parseFloat(val);
   if(isNaN(n) || n<=0) return;
   const inv = Store.data.investments.find(i=>i.id===investId);
@@ -1858,7 +1932,7 @@ function addContribution(investId){
 window.addContribution = addContribution;
 
 function updateCurrentValue(investId){
-  const val = prompt('Novo valor atual do investimento (R$):');
+  const val = prompt('Novo valor atual do investimento (na moeda dele):');
   const n = parseFloat(val);
   if(isNaN(n) || n<0) return;
   const inv = Store.data.investments.find(i=>i.id===investId);
@@ -1925,15 +1999,67 @@ function currentMonthKey(){ return todayISO().slice(0,7); }
 function isCardPurchase(t){ return t.natureza==='fatura' && !!t.cardId && !t.invoiceClose; }
 function isCounted(t){ return !t.pendingInvoice && !isCardPurchase(t); }
 
-function monthTotals(mKey){
-  const txs = Store.data.transactions.filter(t=>monthKey(t.date)===mKey && isCounted(t));
-  const receitas = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
-  const despesas = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+/* ---- moedas: contexto de conversão (ctx = {filter: moeda|null, rep: moeda de exibição}) ---- */
+function accCur(accId){ const a = Store.data.accounts.find(x=>x.id===accId); return (a && a.currency) || BASE; }
+function cardCur(card){ return accCur(card.accountId); }
+function allCurrencies(){
+  const set = new Set([BASE]);
+  (Store.data.currencies||[]).forEach(c=>set.add(c));
+  Store.data.accounts.forEach(a=>set.add(a.currency||BASE));
+  (Store.data.investments||[]).forEach(i=>set.add(i.currency||BASE));
+  return [BASE, ...[...set].filter(c=>c!==BASE).sort()];
+}
+function getRates(){
+  if(!Store.data.rates || typeof Store.data.rates!=='object') Store.data.rates = {};
+  const r = Store.data.rates;
+  r.values = r.values || {}; r.history = r.history || {}; r.manual = r.manual || {}; r.asOf = r.asOf || {};
+  return r;
+}
+// reais por 1 unidade da moeda c (manual tem prioridade sobre a automática)
+function rateOf(c){
+  if(c===BASE) return 1;
+  const r = getRates();
+  if(typeof r.manual[c]==='number' && r.manual[c]>0) return r.manual[c];
+  return (typeof r.values[c]==='number' && r.values[c]>0) ? r.values[c] : null;
+}
+const missingRates = new Set();
+function convertAmt(v, from, to){
+  if(!v) return 0;
+  if(from===to) return v;
+  const rf = rateOf(from), rt = rateOf(to);
+  if(rf==null){ missingRates.add(from); return 0; }
+  if(rt==null){ missingRates.add(to); return 0; }
+  return v*rf/rt;
+}
+function getSettings(){
+  if(!Store.data.settings || typeof Store.data.settings!=='object') Store.data.settings = {};
+  const st = Store.data.settings;
+  if(!st.dashView) st.dashView = 'all';
+  if(!st.displayCurrency) st.displayCurrency = BASE;
+  return st;
+}
+function dashCtx(){
+  const st = getSettings(), curs = allCurrencies();
+  const view = (st.dashView==='all' || curs.includes(st.dashView)) ? st.dashView : 'all';
+  const disp = curs.includes(st.displayCurrency) ? st.displayCurrency : BASE;
+  return view==='all' ? {filter:null, rep:disp} : {filter:view, rep:view};
+}
+const BASE_CTX = {filter:null, rep:BASE};
+function txAmt(t, ctx){ return convertAmt(t.amount, accCur(t.accountId), (ctx||BASE_CTX).rep); }
+function inCtx(t, ctx){ return !ctx || !ctx.filter || accCur(t.accountId)===ctx.filter; }
+
+// receitas/despesas ignoram transferências entre contas (elas só mexem nos saldos)
+function monthTotals(mKey, ctx){
+  const txs = Store.data.transactions.filter(t=>monthKey(t.date)===mKey && isCounted(t) && !t.transfer && inCtx(t,ctx));
+  const receitas = txs.filter(t=>t.type==='income').reduce((s,t)=>s+txAmt(t,ctx),0);
+  const despesas = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+txAmt(t,ctx),0);
   return {receitas, despesas, txs};
 }
 
-function overallBalance(){
-  return Store.data.transactions.filter(isCounted).reduce((s,t)=> s + (t.type==='income'? t.amount : -t.amount), 0);
+function overallBalance(ctx){
+  return Store.data.accounts
+    .filter(a=> !ctx || !ctx.filter || (a.currency||BASE)===ctx.filter)
+    .reduce((s,a)=> s + convertAmt(accountBalance(a.id), a.currency||BASE, (ctx||BASE_CTX).rep), 0);
 }
 
 /* ---------------- Investment yield math ---------------- */
@@ -1982,32 +2108,32 @@ function monthsUntil(dateISO){
   return Math.max(0, months);
 }
 
-function categoryBreakdown(mKey){
-  const {txs} = monthTotals(mKey);
+function categoryBreakdown(mKey, ctx){
+  const {txs} = monthTotals(mKey, ctx);
   const map = {};
   txs.filter(t=>t.type==='expense').forEach(t=>{
-    map[t.category] = (map[t.category]||0) + t.amount;
+    map[t.category] = (map[t.category]||0) + txAmt(t,ctx);
   });
   return map;
 }
 
-function monthExpenseTxs(mKey){
-  return monthTotals(mKey).txs.filter(t=>t.type==='expense');
+function monthExpenseTxs(mKey, ctx){
+  return monthTotals(mKey, ctx).txs.filter(t=>t.type==='expense');
 }
 // {categoria: {subcategoria|'' : total}}  ('' = lançado direto na categoria, sem subcategoria)
-function subBreakdown(mKey){
+function subBreakdown(mKey, ctx){
   const map = {};
-  monthExpenseTxs(mKey).forEach(t=>{
+  monthExpenseTxs(mKey, ctx).forEach(t=>{
     const c = map[t.category] = map[t.category] || {};
     const k = t.subcategory || '';
-    c[k] = (c[k]||0) + t.amount;
+    c[k] = (c[k]||0) + txAmt(t,ctx);
   });
   return map;
 }
-function budgetSpent(b, expenseTxs){
+function budgetSpent(b, expenseTxs, ctx){
   return expenseTxs
     .filter(t=> t.category===b.category && (!b.subcategory || t.subcategory===b.subcategory))
-    .reduce((s,t)=>s+t.amount,0);
+    .reduce((s,t)=>s+txAmt(t,ctx),0);
 }
 
 const PALETTE = ['#c0563f','#c9a24b','#5b7c99','#4f9d69','#8a6fb0','#b0554f','#5f8fae','#9a8b3f','#6f9d7d','#a05f7c'];
@@ -2015,26 +2141,35 @@ const PALETTE = ['#c0563f','#c9a24b','#5b7c99','#4f9d69','#8a6fb0','#b0554f','#5
 /* ---------------- Render: Dashboard ---------------- */
 function renderDashboard(){
   const mKey = currentMonthKey();
-  const {receitas, despesas} = monthTotals(mKey);
-  const saldo = overallBalance();
-  const investido = Store.data.investments.reduce((s,i)=>s+i.currentAmount,0);
+  const ctx = dashCtx();
+  missingRates.clear();
+  renderDashControls(ctx);
+  renderRatesStrip();
+  const {receitas, despesas} = monthTotals(mKey, ctx);
+  const saldo = overallBalance(ctx);
+  const investido = Store.data.investments
+    .filter(i=> !ctx.filter || (i.currency||BASE)===ctx.filter)
+    .reduce((s,i)=> s + convertAmt(i.currentAmount, i.currency||BASE, ctx.rep), 0);
 
-  document.getElementById('sumSaldo').textContent = fmtBRL(saldo);
-  document.getElementById('sumReceitas').textContent = fmtBRL(receitas);
-  document.getElementById('sumDespesas').textContent = fmtBRL(despesas);
-  document.getElementById('sumInvestido').textContent = fmtBRL(investido);
+  document.getElementById('sumSaldo').textContent = fmtMoney(saldo, ctx.rep);
+  document.getElementById('sumReceitas').textContent = fmtMoney(receitas, ctx.rep);
+  document.getElementById('sumDespesas').textContent = fmtMoney(despesas, ctx.rep);
+  document.getElementById('sumInvestido').textContent = fmtMoney(investido, ctx.rep);
 
   const accBalEl = document.getElementById('dashAccountBalances');
-  if(!Store.data.accounts.length){
-    accBalEl.innerHTML = `<div class="empty-state"><div class="stamp">Nenhuma conta cadastrada</div></div>`;
+  const accsShown = Store.data.accounts.filter(a=> !ctx.filter || (a.currency||BASE)===ctx.filter);
+  if(!accsShown.length){
+    accBalEl.innerHTML = `<div class="empty-state"><div class="stamp">${Store.data.accounts.length ? 'Nenhuma conta nesta moeda' : 'Nenhuma conta cadastrada'}</div></div>`;
   } else {
-    accBalEl.innerHTML = Store.data.accounts.map(acc=>{
-      const bal = accountBalance(acc.id);
+    accBalEl.innerHTML = accsShown.map(acc=>{
+      const cur = acc.currency||BASE, bal = accountBalance(acc.id);
+      const approx = (!ctx.filter && cur!==ctx.rep) ? `<div class="meta">≈ ${fmtMoney(convertAmt(bal,cur,ctx.rep), ctx.rep)}</div>` : '';
       return `<div class="rec-item">
         <div>
-          <div class="desc">${acc.name}</div>
+          <div class="desc">${esc(acc.name)} ${allCurrencies().length>1 ? `<span class="tag">${cur}</span>` : ''}</div>
+          ${approx}
         </div>
-        <span class="tx-amount" style="color:${bal>=0?'var(--income)':'var(--expense)'}">${fmtBRL(bal)}</span>
+        <span class="tx-amount" style="color:${bal>=0?'var(--income)':'var(--expense)'}">${fmtMoney(bal,cur)}</span>
         <span></span>
       </div>`;
     }).join('');
@@ -2043,10 +2178,11 @@ function renderDashboard(){
   renderAccountChart();
 
   const invEl = document.getElementById('dashOpenInvoices');
-  if(!Store.data.cards.length){
-    invEl.innerHTML = `<div class="empty-state"><div class="stamp">Nenhum cartão cadastrado</div></div>`;
+  const cardsShown = Store.data.cards.filter(c=> !ctx.filter || cardCur(c)===ctx.filter);
+  if(!cardsShown.length){
+    invEl.innerHTML = `<div class="empty-state"><div class="stamp">${Store.data.cards.length ? 'Nenhum cartão nesta moeda' : 'Nenhum cartão cadastrado'}</div></div>`;
   } else {
-    invEl.innerHTML = Store.data.cards.map(card=>{
+    invEl.innerHTML = cardsShown.map(card=>{
       const next = cardInvoices(card).find(i=>i.unpaid);
       if(!next){
         return `<div class="rec-item"><div><div class="desc">${esc(card.name)}</div><div class="meta">Nenhuma fatura pendente</div></div><span></span><span></span></div>`;
@@ -2060,13 +2196,14 @@ function renderDashboard(){
           <div class="desc">${esc(card.name)}</div>
           <div class="meta">${statusChip(next.status)} ${monthLabel(next.key)} · ${when}</div>
         </div>
-        <span class="tx-amount" style="color:var(--gold-stamp);">${fmtBRL(next.total)}</span>
+        <span class="tx-amount" style="color:var(--gold-stamp);">${fmtMoney(next.total, cardCur(card))}</span>
         ${btn}
       </div>`;
     }).join('');
   }
 
-  const recent = [...Store.data.transactions].sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0,6);
+  const recent = Store.data.transactions.filter(t=>inCtx(t,ctx))
+    .sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id)).slice(0,6);
   const recentEl = document.getElementById('dashRecentTx');
   if(!recent.length){
     recentEl.innerHTML = `<div class="empty-state"><div class="stamp">Nenhum lançamento ainda</div></div>`;
@@ -2074,31 +2211,34 @@ function renderDashboard(){
     recentEl.innerHTML = recent.map(txRowHTML).join('');
   }
 
-  const cats = categoryBreakdown(mKey);
-  renderDonut('dashCatChart','dashCatLegend', cats, subBreakdown(mKey));
+  renderDonut('dashCatChart','dashCatLegend', categoryBreakdown(mKey, ctx), subBreakdown(mKey, ctx), null, ctx.rep);
 
   const budgetsEl = document.getElementById('dashBudgetAlerts');
-  const monthExp = monthExpenseTxs(mKey);
-  const overBudgets = Store.data.budgets.map(b=>{
-    const spent = budgetSpent(b, monthExp);
-    return {...b, spent, pct: spent/b.limit};
-  }).filter(b=>b.pct>=0.8).sort((a,b)=>b.pct-a.pct);
-  if(!overBudgets.length){
-    budgetsEl.innerHTML = `<div class="empty-state"><div class="stamp">Tudo dentro do previsto</div></div>`;
+  if(ctx.filter && ctx.filter!==BASE){
+    budgetsEl.innerHTML = `<div class="empty-state"><div class="stamp">Orçamentos são definidos em ${BASE}</div></div>`;
   } else {
-    budgetsEl.innerHTML = overBudgets.map(b=>{
-      const cls = b.pct>=1?'over':(b.pct>=0.8?'warn':'ok');
-      return `<div class="budget-item">
-        <div class="budget-head"><span class="cat">${esc(catLabel(b.category, b.subcategory))}</span><span class="nums">${fmtBRL(b.spent)} / ${fmtBRL(b.limit)}</span></div>
-        <div class="budget-track"><div class="budget-fill ${cls}" style="width:${Math.min(100,b.pct*100)}%"></div></div>
-        ${b.pct>=1? `<div class="budget-alert">Limite ultrapassado!</div>`:''}
-      </div>`;
-    }).join('');
+    const monthExp = monthExpenseTxs(mKey);
+    const overBudgets = Store.data.budgets.map(b=>{
+      const spent = budgetSpent(b, monthExp);
+      return {...b, spent, pct: spent/b.limit};
+    }).filter(b=>b.pct>=0.8).sort((a,b)=>b.pct-a.pct);
+    if(!overBudgets.length){
+      budgetsEl.innerHTML = `<div class="empty-state"><div class="stamp">Tudo dentro do previsto</div></div>`;
+    } else {
+      budgetsEl.innerHTML = overBudgets.map(b=>{
+        const cls = b.pct>=1?'over':(b.pct>=0.8?'warn':'ok');
+        return `<div class="budget-item">
+          <div class="budget-head"><span class="cat">${esc(catLabel(b.category, b.subcategory))}</span><span class="nums">${fmtBRL(b.spent)} / ${fmtBRL(b.limit)}</span></div>
+          <div class="budget-track"><div class="budget-fill ${cls}" style="width:${Math.min(100,b.pct*100)}%"></div></div>
+          ${b.pct>=1? `<div class="budget-alert">Limite ultrapassado!</div>`:''}
+        </div>`;
+      }).join('');
+    }
   }
 
   const upEl = document.getElementById('dashUpcoming');
   const upcoming = Store.data.recurring
-    .filter(r=>r.active)
+    .filter(r=>r.active && (!ctx.filter || accCur(r.accountId)===ctx.filter))
     .map(r=>({...r, isPaid: !!Store.data.recurringLog[r.id+'__'+mKey]}))
     .sort((a,b)=>a.dayOfMonth-b.dayOfMonth);
   if(!upcoming.length){
@@ -2108,13 +2248,14 @@ function renderDashboard(){
       <div class="rec-item">
         <div>
           <div class="desc">${r.description}</div>
-          <div class="meta">${recDayLabel(r)} · ${esc(catLabel(r.category, r.subcategory))} · <span style="color:${r.type==='income'?'var(--income)':'var(--expense)'}">${fmtBRL(r.amount)}</span></div>
+          <div class="meta">${recDayLabel(r)} · ${esc(catLabel(r.category, r.subcategory))} · <span style="color:${r.type==='income'?'var(--income)':'var(--expense)'}">${fmtMoney(r.amount, accCur(r.accountId))}</span></div>
         </div>
         <span class="badge ${r.isPaid?'paid':'pending'}">${r.isPaid?'Lançado':'Pendente'}</span>
         ${!r.isPaid? `<button class="btn small" onclick="launchRecurring('${r.id}','${mKey}')">Lançar</button>` : '<span></span>'}
       </div>
     `).join('');
   }
+  renderDashHint(ctx);
 }
 
 function accountName(id){
@@ -2137,14 +2278,14 @@ function txRowHTML(t){
       <div class="meta"><span class="tag">${esc(catLabel(t.category, t.subcategory))}</span><span class="tag">${accountName(t.accountId)}</span>${(t.natureza==='fixo'||t.recurringId)?'<span class="tag">fixo</span>':''}${t.invoiceClose?'<span class="tag">pgto. fatura</span>':''}${faturaTag} ${new Date(t.date+'T12:00:00').toLocaleDateString('pt-BR')}</div>
       ${t.note ? `<div class="note">📝 ${esc(t.note)}</div>` : ''}
     </div>
-    <div class="tx-amount ${t.type}">${cardPurchase?'':(t.type==='income'?'+':'-')} ${fmtBRL(t.amount)}</div>
+    <div class="tx-amount ${t.type}">${cardPurchase?'':(t.type==='income'?'+':'-')} ${fmtMoney(t.amount, accCur(t.accountId))}</div>
     ${photoBtn}
     <button class="tx-del tx-edit" onclick="editTx('${t.id}')" title="Editar">✎</button>
     <button class="tx-del" onclick="deleteTx('${t.id}')" title="Excluir">✕</button>
   </div>`;
 }
 
-function renderDonut(chartElId, legendElId, dataMap, subMap, emptyMsg){
+function renderDonut(chartElId, legendElId, dataMap, subMap, emptyMsg, cur){
   const el = document.getElementById(chartElId);
   const legendEl = document.getElementById(legendElId);
   const entries = Object.entries(dataMap).sort((a,b)=>b[1]-a[1]);
@@ -2169,17 +2310,17 @@ function renderDonut(chartElId, legendElId, dataMap, subMap, emptyMsg){
     angleAcc += frac*360;
   });
   el.innerHTML = `<svg viewBox="0 0 200 200" style="max-width:220px;display:block;margin:0 auto;">${segments}
-    <text x="100" y="95" text-anchor="middle" fill="var(--ink)" font-size="13" font-family="monospace" font-weight="700">${fmtBRL(total)}</text>
+    <text x="100" y="95" text-anchor="middle" fill="var(--ink)" font-size="13" font-family="monospace" font-weight="700">${fmtMoney(total, cur)}</text>
     <text x="100" y="112" text-anchor="middle" fill="var(--ink-faint)" font-size="9" letter-spacing="1">TOTAL</text>
   </svg>`;
   legendEl.innerHTML = entries.map(([cat,val],i)=>{
     const subs = Object.entries((subMap||{})[cat]||{});
     const hasNamed = subs.some(([k])=>k!=='');
     const subHTML = hasNamed
-      ? `<div class="legend-subs">${subs.sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div>${k===''?'Geral (sem subcategoria)':esc(k)} · ${fmtBRL(v)}</div>`).join('')}</div>`
+      ? `<div class="legend-subs">${subs.sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div>${k===''?'Geral (sem subcategoria)':esc(k)} · ${fmtMoney(v, cur)}</div>`).join('')}</div>`
       : '';
     return `<div class="legend-group">
-      <div class="legend-item"><span class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${cat} · ${fmtBRL(val)}</div>
+      <div class="legend-item"><span class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${cat} · ${fmtMoney(val, cur)}</div>
       ${subHTML}
     </div>`;
   }).join('');
@@ -2225,7 +2366,7 @@ function renderRecorrentes(){
     return `<div class="rec-item">
       <div>
         <div class="desc">${r.description}</div>
-        <div class="meta">${recDayLabel(r)} · ${esc(catLabel(r.category, r.subcategory))} · <span style="color:${r.type==='income'?'var(--income)':'var(--expense)'}">${r.type==='income'?'+':'-'} ${fmtBRL(r.amount)}</span></div>
+        <div class="meta">${recDayLabel(r)} · ${esc(catLabel(r.category, r.subcategory))} · <span style="color:${r.type==='income'?'var(--income)':'var(--expense)'}">${r.type==='income'?'+':'-'} ${fmtMoney(r.amount, accCur(r.accountId))}</span></div>
       </div>
       <span class="badge ${isPaid?'paid':'pending'}">${isPaid?'Lançado':'Pendente'}</span>
       <div style="display:flex;gap:6px;">
@@ -2245,6 +2386,7 @@ function renderInvestimentos(){
     return;
   }
   el.innerHTML = list.map(inv=>{
+    const fmtI = v=> fmtMoney(v, inv.currency||BASE);
     const rentab = inv.initialAmount>0 ? ((inv.currentAmount-inv.initialAmount)/inv.initialAmount*100) : 0;
     const rentabCls = rentab>=0?'rentab-pos':'rentab-neg';
     const annualRate = investAnnualRate(inv);
@@ -2258,11 +2400,11 @@ function renderInvestimentos(){
       if(inv.withdrawDate){
         const m = monthsUntil(inv.withdrawDate);
         const projected = investProjectedValue(inv, m);
-        resgateLine = `<div class="meta" style="margin-top:4px;">Projeção em ${new Date(inv.withdrawDate+'T00:00:00').toLocaleDateString('pt-BR')}: <strong style="color:var(--income);">${fmtBRL(projected)}</strong></div>`;
+        resgateLine = `<div class="meta" style="margin-top:4px;">Projeção em ${new Date(inv.withdrawDate+'T00:00:00').toLocaleDateString('pt-BR')}: <strong style="color:var(--income);">${fmtI(projected)}</strong></div>`;
       }
       yieldBlock = `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);">
         <div class="meta">${yieldLabel} · ≈ ${(annualRate*100).toFixed(2)}% a.a.</div>
-        <div class="meta" style="margin-top:2px;">Rendimento projetado no próximo mês: <strong style="color:var(--income);">${fmtBRL(gain1m)}</strong></div>
+        <div class="meta" style="margin-top:2px;">Rendimento projetado no próximo mês: <strong style="color:var(--income);">${fmtI(gain1m)}</strong></div>
         ${resgateLine}
       </div>`;
     }
@@ -2275,8 +2417,8 @@ function renderInvestimentos(){
         <button class="tx-del" onclick="deleteInvestment('${inv.id}')" title="Excluir">✕</button>
       </div>
       <div class="invest-nums">
-        <div><div class="lbl">Aportado</div><div class="val">${fmtBRL(inv.initialAmount)}</div></div>
-        <div><div class="lbl">Valor atual</div><div class="val">${fmtBRL(inv.currentAmount)}</div></div>
+        <div><div class="lbl">Aportado</div><div class="val">${fmtI(inv.initialAmount)}</div></div>
+        <div><div class="lbl">Valor atual</div><div class="val">${fmtI(inv.currentAmount)}</div></div>
         <div><div class="lbl">Rentabilidade</div><div class="val ${rentabCls}">${rentab>=0?'+':''}${rentab.toFixed(2)}%</div></div>
       </div>
       ${yieldBlock}
@@ -2324,14 +2466,16 @@ function renderProjecao(){
   const el = document.getElementById('projChart');
   const now = new Date();
 
-  const recurringNet = Store.data.recurring.filter(r=>r.active)
-    .reduce((s,r)=> s + (r.type==='income'? r.amount : -r.amount), 0);
+  const ctx = dashCtx(), rep = ctx.rep;
+  const recurringNet = Store.data.recurring.filter(r=>r.active && (!ctx.filter || accCur(r.accountId)===ctx.filter))
+    .reduce((s,r)=> s + convertAmt(r.type==='income'? r.amount : -r.amount, accCur(r.accountId), rep), 0);
 
-  const investList = Store.data.investments;
-  const investTotalNow = investList.reduce((s,i)=>s+i.currentAmount,0);
+  const investList = Store.data.investments.filter(i=> !ctx.filter || (i.currency||BASE)===ctx.filter);
+  const invBase = (inv, v)=> convertAmt(v, inv.currency||BASE, rep);
+  const investTotalNow = investList.reduce((s,i)=>s+invBase(i,i.currentAmount),0);
   const hasYield = investList.some(i=>investAnnualRate(i)!==null);
 
-  let balance = overallBalance();
+  let balance = overallBalance(ctx);
   const cashPoints = [{label:'Hoje', value:balance}];
   const totalPoints = [{label:'Hoje', value:balance+investTotalNow}];
   const investRows = [];
@@ -2341,12 +2485,12 @@ function renderProjecao(){
     // Lançamentos já cadastrados com data futura dentro deste mês (não gerados por recorrência,
     // para não contar em dobro com o recurringNet acima).
     const scheduledNet = Store.data.transactions
-      .filter(t=> monthKey(t.date)===mk && !t.recurringId && isCounted(t))
-      .reduce((s,t)=> s + (t.type==='income'?t.amount:-t.amount), 0);
+      .filter(t=> monthKey(t.date)===mk && !t.recurringId && isCounted(t) && !t.transfer && inCtx(t,ctx))
+      .reduce((s,t)=> s + (t.type==='income'?txAmt(t,ctx):-txAmt(t,ctx)), 0);
     balance += recurringNet + scheduledNet;
 
-    const investValueMonth = investList.reduce((s,inv)=> s + investProjectedValue(inv, i), 0);
-    const investGainMonth = investList.reduce((s,inv)=> s + investMonthlyGain(inv, i), 0);
+    const investValueMonth = investList.reduce((s,inv)=> s + invBase(inv, investProjectedValue(inv, i)), 0);
+    const investGainMonth = investList.reduce((s,inv)=> s + invBase(inv, investMonthlyGain(inv, i)), 0);
 
     const label = monthLabel(mk);
     cashPoints.push({label, value: balance});
@@ -2370,7 +2514,7 @@ function renderProjecao(){
   const labels = cashPoints.map((p,i)=>`<text x="${xFor(i)}" y="${h-14}" text-anchor="middle" fill="var(--ink-faint)" font-size="10">${p.label}</text>`).join('');
   const cashDots = cashPoints.map((p,i)=>`
     <circle cx="${xFor(i)}" cy="${yFor(p.value)}" r="3.5" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
-    <text x="${xFor(i)}" y="${yFor(p.value)-10}" text-anchor="middle" fill="var(--ink-dim)" font-size="9" font-family="monospace">${fmtBRL(p.value)}</text>
+    <text x="${xFor(i)}" y="${yFor(p.value)-10}" text-anchor="middle" fill="var(--ink-dim)" font-size="9" font-family="monospace">${fmtMoney(p.value, rep)}</text>
   `).join('');
 
   let totalPath = '', totalDots = '';
@@ -2378,7 +2522,7 @@ function renderProjecao(){
     totalPath = buildPath(totalPoints);
     totalDots = totalPoints.map((p,i)=>`
       <circle cx="${xFor(i)}" cy="${yFor(p.value)}" r="3.5" fill="var(--income)" stroke="var(--bg)" stroke-width="2"/>
-      <text x="${xFor(i)}" y="${yFor(p.value)+16}" text-anchor="middle" fill="var(--income)" font-size="9" font-family="monospace">${fmtBRL(p.value)}</text>
+      <text x="${xFor(i)}" y="${yFor(p.value)+16}" text-anchor="middle" fill="var(--income)" font-size="9" font-family="monospace">${fmtMoney(p.value, rep)}</text>
     `).join('');
   }
 
@@ -2392,14 +2536,20 @@ function renderProjecao(){
     ${totalDots}
   </svg>`;
 
+  const hint = document.getElementById('projHint');
+  const miss = [...missingRates];
+  hint.className = 'dash-hint' + (miss.length ? ' warn' : '');
+  hint.textContent = miss.length ? `Sem cotação para ${miss.join(', ')}: esses valores ficaram de fora. Veja Contas › Moedas e cotações.`
+    : (ctx.filter ? `Projeção apenas das contas e investimentos em ${ctx.filter}.` : `Projeção em ${rep}: contas e investimentos de outras moedas entram convertidos pela cotação mais recente (parâmetro visual).`);
+
   const tableEl = document.getElementById('investProjTable');
   if(!hasYield){
     tableEl.innerHTML = `<div class="empty-state"><div class="stamp">Nenhum investimento com rendimento configurado</div></div>`;
   } else {
     tableEl.innerHTML = investRows.map(r=>`
       <div class="budget-item">
-        <div class="budget-head"><span class="cat">${r.label}</span><span class="nums" style="color:var(--income);">+${fmtBRL(r.gain)} no mês</span></div>
-        <div class="meta">Total investido projetado ao fim do mês: ${fmtBRL(r.value)}</div>
+        <div class="budget-head"><span class="cat">${r.label}</span><span class="nums" style="color:var(--income);">+${fmtMoney(r.gain, rep)} no mês</span></div>
+        <div class="meta">Total investido projetado ao fim do mês: ${fmtMoney(r.value, rep)}</div>
       </div>
     `).join('');
   }
@@ -2446,7 +2596,7 @@ function renderFaturas(){
     const next = cardInvoices(card).find(i=>i.unpaid);
     let line;
     if(!card.dueDay) line = `<span style="color:var(--gold-stamp);">Defina o dia de vencimento (botão Editar)</span>`;
-    else if(next) line = `${statusChip(next.status)} Fatura ${monthLabel(next.key)} · <b>${fmtBRL(next.total)}</b> · vence ${fmtShortBR(next.info.due)}`;
+    else if(next) line = `${statusChip(next.status)} Fatura ${monthLabel(next.key)} · <b>${fmtMoney(next.total, cardCur(card))}</b> · vence ${fmtShortBR(next.info.due)}`;
     else line = 'Nenhuma fatura pendente';
     return `<div class="invest-card">
       <div class="invest-head">
@@ -2475,7 +2625,7 @@ document.getElementById('accountForm').addEventListener('submit', (e)=>{
   if(Store.data.accounts.some(a=>a.name.toLowerCase()===nome.toLowerCase())){
     toast('Já existe uma conta com esse nome'); return;
   }
-  Store.data.accounts.push({id:uid(), name:nome});
+  Store.data.accounts.push({id:uid(), name:nome, currency: document.getElementById('accMoeda').value || BASE});
   Store.save();
   toast('Conta adicionada');
   document.getElementById('accountForm').reset();
@@ -2533,8 +2683,8 @@ function renderContas(){
     const bal = accountBalance(acc.id);
     return `<div class="rec-item">
       <div>
-        <div class="desc">${acc.name}</div>
-        <div class="meta">Saldo: <span style="color:${bal>=0?'var(--income)':'var(--expense)'}">${fmtBRL(bal)}</span></div>
+        <div class="desc">${esc(acc.name)} <span class="tag">${acc.currency||BASE}</span></div>
+        <div class="meta">Saldo: <span style="color:${bal>=0?'var(--income)':'var(--expense)'}">${fmtMoney(bal, acc.currency||BASE)}</span></div>
         ${accountCardsHTML(acc.id)}
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
@@ -2742,7 +2892,7 @@ function renderRapidos(){
         <div class="desc">${esc(d.description) || '<span style="color:var(--ink-faint);">(sem descrição)</span>'}</div>
         <div class="meta">
           <span class="tag">${d.type==='income'?'Receita':'Despesa'}</span>
-          <span style="color:${d.type==='income'?'var(--income)':'var(--expense)'};font-family:var(--font-mono);font-weight:700;">${d.amount!=null ? fmtBRL(d.amount) : 'valor a definir'}</span>
+          <span style="color:${d.type==='income'?'var(--income)':'var(--expense)'};font-family:var(--font-mono);font-weight:700;">${d.amount!=null ? d.amount.toLocaleString('pt-BR',{minimumFractionDigits:2}) : 'valor a definir'}</span>
           · ${when}
         </div>
         ${d.note ? `<div class="meta" style="font-style:italic;white-space:pre-wrap;">📝 ${esc(d.note)}</div>` : ''}
@@ -2776,7 +2926,8 @@ function fillEditSelects(extraCat, extraAcc){
   if(extraCat && !cats.includes(extraCat)) cats.push(extraCat);
   document.getElementById('edCategoria').innerHTML = cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
   const accs = Store.data.accounts;
-  document.getElementById('edConta').innerHTML = accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  const multiCur = allCurrencies().length>1;
+  document.getElementById('edConta').innerHTML = accs.map(a=>`<option value="${a.id}">${esc(a.name)}${multiCur?` (${a.currency||BASE})`:''}</option>`).join('');
   document.getElementById('edCard').innerHTML = Store.data.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
 }
 document.getElementById('edNatureza').addEventListener('change', (e)=>{
@@ -2946,8 +3097,10 @@ function openLaunchModal(recId, mKey){
   launchCtx = {recId, mKey, planned};
 
   document.getElementById('lcTitle').textContent = 'Lançar: ' + rec.description;
+  const lcCur = accCur(rec.accountId);
+  document.getElementById('lcValorLbl').textContent = `Valor deste mês (${lcCur==='BRL'?'R$':lcCur})`;
   document.getElementById('lcValor').value = Math.round(rec.amount*100)/100;
-  document.getElementById('lcDefaultHint').textContent = `Valor padrão: ${fmtBRL(rec.amount)}. Ajustar aqui não muda o padrão.`;
+  document.getElementById('lcDefaultHint').textContent = `Valor padrão: ${fmtMoney(rec.amount, lcCur)}. Ajustar aqui não muda o padrão.`;
   document.getElementById('lcUpdateDefault').checked = false;
   document.getElementById('lcUpdateDefaultWrap').style.display = 'none';
   document.getElementById('lcNota').value = '';
@@ -3171,8 +3324,8 @@ function syncAccountLock(natId, cardId, contaId, hintId){
   }
   sel.disabled = false; hint.style.display = 'none';
 }
-function syncTxAccountLock(){ syncAccountLock('txNatureza','txCard','txConta','txContaHint'); }
-function syncEdAccountLock(){ syncAccountLock('edNatureza','edCard','edConta','edContaHint'); }
+function syncTxAccountLock(){ syncAccountLock('txNatureza','txCard','txConta','txContaHint'); updateCurrencyLabels(); }
+function syncEdAccountLock(){ syncAccountLock('edNatureza','edCard','edConta','edContaHint'); updateCurrencyLabels(); }
 document.getElementById('txNatureza').addEventListener('change', syncTxAccountLock);
 document.getElementById('txCard').addEventListener('change', syncTxAccountLock);
 document.getElementById('edNatureza').addEventListener('change', syncEdAccountLock);
@@ -3475,6 +3628,7 @@ function invoiceInfo(card, key){
   return {key, start, end, due};
 }
 function invSigned(t){ return t.type==='income' ? -t.amount : t.amount; }
+function invSignedIn(t, cur){ return convertAmt(invSigned(t), accCur(t.accountId), cur); }
 function buildInvoice(card, key, items){
   const today = todayISO();
   const info = invoiceInfo(card, key);
@@ -3513,7 +3667,7 @@ function openPayInvoice(cardId, key){
   payCtx = {cardId, key};
   document.getElementById('payTitle').textContent = `Pagar fatura — ${card.name}`;
   document.getElementById('paySummary').innerHTML =
-    `Fatura <b>${monthLabel(key)}</b> (${fmtShortBR(inv.info.start)} a ${fmtShortBR(inv.info.end)}) · <b>${fmtBRL(inv.payableTotal)}</b><br>Será debitado da conta <b>${acc?esc(acc.name):'—'}</b>.`;
+    `Fatura <b>${monthLabel(key)}</b> (${fmtShortBR(inv.info.start)} a ${fmtShortBR(inv.info.end)}) · <b>${fmtMoney(inv.payableTotal, cardCur(card))}</b><br>Será debitado da conta <b>${acc?esc(acc.name):'—'}</b>.`;
   document.getElementById('payDate').value = todayISO();
   const hint = document.getElementById('payHint');
   if(inv.status==='aberta'){
@@ -3589,6 +3743,8 @@ function renderInvoiceView(){
   cardSel.value = (prevCard==='__all' || cards.some(c=>c.id===prevCard)) ? prevCard : cards[0].id;
   const single = cardSel.value==='__all' ? null : cards.find(c=>c.id===cardSel.value);
   const targets = single ? [single] : cards;
+  const curSet = new Set(cards.map(cardCur));
+  const invCur = single ? cardCur(single) : (curSet.size===1 ? cardCur(cards[0]) : BASE);
   const byCard = targets.map(c=>({card:c, invs:cardInvoices(c)}));
 
   const keySet = new Set();
@@ -3621,15 +3777,15 @@ function renderInvoiceView(){
   const sub = subSel.value;
   const filtered = items.filter(t=> (!cat || t.category===cat) && (!sub || (sub==='__none' ? !t.subcategory : t.subcategory===sub)));
 
-  const total = items.reduce((x,t)=>x+invSigned(t),0);
-  const ftotal = filtered.reduce((x,t)=>x+invSigned(t),0);
+  const total = items.reduce((x,t)=>x+invSignedIn(t,invCur),0);
+  const ftotal = filtered.reduce((x,t)=>x+invSignedIn(t,invCur),0);
   let periodTxt, dueTxt, statusHTML, payBtn = '';
   if(single){
     const inv = sections[0].inv;
     periodTxt = `${fmtShortBR(inv.info.start)} a ${fmtShortBR(inv.info.end)}`;
     dueTxt = inv.info.due ? fmtDateBR(inv.info.due) : 'defina o vencimento';
     statusHTML = statusChip(inv.status);
-    if(inv.unpaid && inv.payable.length) payBtn = `<button class="btn" style="margin-top:12px;" onclick="openPayInvoice('${single.id}','${key}')">Pagar fatura · ${fmtBRL(inv.payableTotal)}</button>`;
+    if(inv.unpaid && inv.payable.length) payBtn = `<button class="btn" style="margin-top:12px;" onclick="openPayInvoice('${single.id}','${key}')">Pagar fatura · ${fmtMoney(inv.payableTotal, invCur)}</button>`;
   } else {
     const n = sections.filter(sx=>sx.inv.unpaid).length;
     periodTxt = `Fecham em ${monthLabel(key)}`; dueTxt = '—';
@@ -3639,22 +3795,22 @@ function renderInvoiceView(){
       <div class="stamp-card"><div class="label">Período</div><div class="value" style="font-size:15px;">${periodTxt}</div></div>
       <div class="stamp-card"><div class="label">Vencimento</div><div class="value" style="font-size:15px;">${dueTxt}</div></div>
       <div class="stamp-card"><div class="label">Status</div><div class="value" style="font-size:14px;">${statusHTML}</div></div>
-      <div class="stamp-card"><div class="label">Total da fatura</div><div class="value">${fmtBRL(total)}</div>${cat ? `<div class="meta">Filtro: <b>${fmtBRL(ftotal)}</b></div>` : ''}</div>
+      <div class="stamp-card"><div class="label">Total da fatura</div><div class="value">${fmtMoney(total, invCur)}</div>${cat ? `<div class="meta">Filtro: <b>${fmtMoney(ftotal, invCur)}</b></div>` : ''}</div>
     </div>${payBtn}`;
 
   const catMap = {}, subMap = {};
   items.forEach(t=>{
-    const v = invSigned(t);
+    const v = invSignedIn(t, invCur);
     catMap[t.category] = (catMap[t.category]||0) + v;
     const sm = subMap[t.category] = subMap[t.category] || {};
     const sk = t.subcategory || '';
     sm[sk] = (sm[sk]||0) + v;
   });
   Object.keys(catMap).forEach(k=>{ if(catMap[k]<=0) delete catMap[k]; });
-  renderDonut('invCatChart','invCatLegend', catMap, subMap, 'Sem lançamentos nesta fatura');
+  renderDonut('invCatChart','invCatLegend', catMap, subMap, 'Sem lançamentos nesta fatura', invCur);
 
   const totals = {};
-  byCard.forEach(({invs})=> invs.forEach(i=>{ totals[i.key] = (totals[i.key]||0) + i.total; }));
+  byCard.forEach(({card,invs})=> invs.forEach(i=>{ totals[i.key] = (totals[i.key]||0) + convertAmt(i.total, cardCur(card), invCur); }));
   if(!(key in totals)) totals[key] = 0;
   const ks = Object.keys(totals).sort().slice(-8);
   const max = Math.max(...ks.map(k=>Math.max(totals[k],0)), 1);
@@ -3662,7 +3818,7 @@ function renderInvoiceView(){
     <div class="hist-row ${k===key?'sel':''}" data-key="${k}" title="Ver esta fatura">
       <span>${monthLabel(k)}</span>
       <div class="acc-bar-track"><div class="acc-bar" style="left:0;width:${Math.max(0,totals[k])/max*100}%;background:${k===key?'var(--gold-stamp)':'var(--accent)'};"></div></div>
-      <span class="num">${fmtBRL(totals[k])}</span>
+      <span class="num">${fmtMoney(totals[k], invCur)}</span>
     </div>`).join('');
 
   const listEl = document.getElementById('invItems');
@@ -3687,9 +3843,10 @@ document.getElementById('invHistChart').addEventListener('click', (e)=>{
 /* ---- saldo por conta (gráfico) ---- */
 function renderAccountChart(){
   const el = document.getElementById('dashAccountChart');
-  const accs = Store.data.accounts;
+  const ctx = dashCtx();
+  const accs = Store.data.accounts.filter(a=> !ctx.filter || (a.currency||BASE)===ctx.filter);
   if(!accs.length){ el.innerHTML = ''; return; }
-  const rows = accs.map(a=>({name:a.name, bal:accountBalance(a.id)}));
+  const rows = accs.map(a=>({name:a.name, bal:convertAmt(accountBalance(a.id), a.currency||BASE, ctx.rep)}));
   const maxAbs = Math.max(...rows.map(r=>Math.abs(r.bal)), 1);
   const hasNeg = rows.some(r=>r.bal<0);
   el.innerHTML = rows.map(r=>{
@@ -3700,7 +3857,7 @@ function renderAccountChart(){
     return `<div class="acc-chart-row">
       <span class="nm" title="${esc(r.name)}">${esc(r.name)}</span>
       <div class="acc-bar-track">${hasNeg ? '<div class="acc-bar-mid"></div>' : ''}<div class="acc-bar" style="left:${left}%;width:${width}%;background:${color};"></div></div>
-      <span class="num" style="color:${color};">${fmtBRL(r.bal)}</span>
+      <span class="num" style="color:${color};">${fmtMoney(r.bal, ctx.rep)}</span>
     </div>`;
   }).join('');
 }
@@ -3718,7 +3875,7 @@ function dueSoonItems(){
       if(Store.data.recurringLog[r.id+'__'+mk]) return;
       const due = isoYMD(y, m-1, clampDay(y, m-1, day));
       const days = daysBetween(today, due);
-      if(days>=0 && days<=3) out.push({kind:'rec', id:r.id, key:mk, title:r.description, amount:r.amount, due, days, sub:'conta recorrente — ainda não lançada'});
+      if(days>=0 && days<=3) out.push({kind:'rec', id:r.id, key:mk, title:r.description, amount:r.amount, cur:accCur(r.accountId), due, days, sub:'conta recorrente — ainda não lançada'});
     });
   });
   Store.data.cards.forEach(c=>{
@@ -3726,7 +3883,7 @@ function dueSoonItems(){
     cardInvoices(c).forEach(inv=>{
       if(!inv.unpaid || !inv.info.due || !inv.payable.length) return;
       const days = daysBetween(today, inv.info.due);
-      if(days>=0 && days<=3) out.push({kind:'card', id:c.id, key:inv.key, title:`Fatura ${c.name}`, amount:inv.payableTotal, due:inv.info.due, days, sub:`fatura de ${monthLabel(inv.key)} — não paga`});
+      if(days>=0 && days<=3) out.push({kind:'card', id:c.id, key:inv.key, title:`Fatura ${c.name}`, amount:inv.payableTotal, cur:cardCur(c), due:inv.info.due, days, sub:`fatura de ${monthLabel(inv.key)} — não paga`});
     });
   });
   return out.sort((a,b)=>a.days-b.days);
@@ -3741,7 +3898,7 @@ function renderDueList(){
         <div class="when">${dueWhen(it.days)} · ${fmtDateBR(it.due)}</div>
         <div class="meta">${esc(it.sub)}</div>
       </div>
-      <div class="amt">${fmtBRL(it.amount)}</div>
+      <div class="amt">${fmtMoney(it.amount, it.cur)}</div>
       <button type="button" class="btn small" data-due-idx="${i}">${it.kind==='card' ? 'Pagar fatura' : 'Lançar'}</button>
     </div>`).join('');
 }
@@ -3771,12 +3928,301 @@ function updateDueAlerts(){
 }
 setTimeout(()=>{ updateDueAlerts(); tryOpenDueModal(); }, 5000);
 
+/* =====================================================================
+   Multi-moeda: moedas, cotações (API só visual), visão do painel, transferências
+   ===================================================================== */
+['transferModal'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('mousedown', e=>{ if(e.target===el) closeModal(id); });
+});
+function curLabel(c){ return c==='BRL' ? 'R$' : c; }
+function fillCurrencySelects(){
+  const curs = allCurrencies();
+  ['accMoeda','invMoeda'].forEach(id=>{
+    const sel = document.getElementById(id), prev = sel.value;
+    sel.innerHTML = curs.map(c=>`<option value="${c}">${c}</option>`).join('');
+    sel.value = curs.includes(prev) ? prev : BASE;
+  });
+}
+function updateCurrencyLabels(){
+  const set = (id, accSelId)=>{
+    const el = document.getElementById(id), sel = document.getElementById(accSelId);
+    if(el && sel && sel.value) el.textContent = `Valor (${curLabel(accCur(sel.value))})`;
+  };
+  set('txValorLbl','txConta'); set('recValorLbl','recConta'); set('edValorLbl','edConta');
+}
+['txConta','recConta','edConta'].forEach(id=>document.getElementById(id).addEventListener('change', updateCurrencyLabels));
+
+/* ---- cotações (Frankfurter) ---- */
+function parseSeries(json, quote){
+  const out = {};
+  const pushItem = (d, v)=>{ if(d && typeof v==='number' && isFinite(v)) out[String(d).slice(0,10)] = v; };
+  if(!json) return out;
+  const rates = json.rates;
+  if(rates && !Array.isArray(rates) && typeof rates==='object'){
+    const ks = Object.keys(rates);
+    if(ks.length && rates[ks[0]] && typeof rates[ks[0]]==='object'){
+      ks.forEach(d=> pushItem(d, rates[d][quote]));
+    } else if(json.date){
+      pushItem(json.date, rates[quote]);
+    }
+  }
+  const arr = Array.isArray(json) ? json : (Array.isArray(rates) ? rates : null);
+  if(arr) arr.forEach(x=>{
+    const q = x.quote || x.target || x.currency || x.symbol;
+    if(!q || q===quote) pushItem(x.date, x.rate!==undefined ? x.rate : x.value);
+  });
+  return out;
+}
+async function fetchSeriesFor(c, from, to){
+  const urls = [
+    `https://api.frankfurter.dev/v1/${from}..${to}?base=${c}&symbols=${BASE}`,
+    `https://api.frankfurter.dev/v2/rates?base=${c}&quotes=${BASE}&from=${from}&to=${to}`
+  ];
+  for(const url of urls){
+    try{
+      const ctl = new AbortController();
+      const tm = setTimeout(()=>ctl.abort(), 9000);
+      const res = await fetch(url, {signal: ctl.signal});
+      clearTimeout(tm);
+      if(!res.ok) continue;
+      const out = parseSeries(await res.json(), BASE);
+      if(Object.keys(out).length) return out;
+    }catch(err){ /* tenta o próximo endpoint */ }
+  }
+  return null;
+}
+let ratesBusy = false;
+// retorna true (tudo ok), 'partial', false (nada atualizou) ou null (nada a fazer)
+async function fetchRates(force){
+  if(ratesBusy) return null;
+  const curs = allCurrencies().filter(c=>c!==BASE);
+  if(!curs.length) return null;
+  const r = getRates(), today = todayISO();
+  if(!force && r.updatedDate===today && curs.every(c=>r.values[c])) return null;
+  ratesBusy = true;
+  try{
+    const from = addDaysISO(today, -9);
+    const results = await Promise.all(curs.map(c=> fetchSeriesFor(c, from, today).then(sr=>[c,sr])));
+    let ok = 0;
+    results.forEach(([c,sr])=>{
+      if(!sr) return;
+      ok++;
+      const h = r.history[c] = Object.assign(r.history[c]||{}, sr);
+      const ds = Object.keys(h).sort();
+      ds.slice(0, -8).forEach(d=> delete h[d]);
+      const last = ds[ds.length-1];
+      r.values[c] = h[last]; r.asOf[c] = last;
+    });
+    if(ok){ r.updatedDate = today; r.fetchedAt = new Date().toISOString(); Store.save(); }
+    return ok===curs.length ? true : (ok>0 ? 'partial' : false);
+  } finally { ratesBusy = false; }
+}
+function refreshRates(){
+  toast('Atualizando cotações…');
+  fetchRates(true).then(res=>{
+    if(res===true) toast('Cotações atualizadas');
+    else if(res==='partial') toast('Algumas cotações não atualizaram');
+    else if(res===false) toast('Sem conexão com a API — usando a última cotação salva');
+    renderAll();
+  }).catch(()=> toast('Não consegui atualizar as cotações'));
+}
+window.refreshRates = refreshRates;
+document.getElementById('btnRefreshRates').addEventListener('click', refreshRates);
+
+/* ---- cadastro de moedas ---- */
+document.getElementById('currencyForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const code = document.getElementById('curCode').value.trim().toUpperCase();
+  if(!/^[A-Z]{3}$/.test(code)){ toast('Use o código de 3 letras (ex.: EUR, USD)'); return; }
+  try{ new Intl.NumberFormat('pt-BR',{style:'currency',currency:code}); }
+  catch(err){ toast('Código de moeda inválido'); return; }
+  if(allCurrencies().includes(code)){ toast('Essa moeda já está cadastrada'); return; }
+  Store.data.currencies = Store.data.currencies || [];
+  Store.data.currencies.push(code);
+  Store.save();
+  document.getElementById('curCode').value = '';
+  toast(`Moeda ${code} adicionada`);
+  renderAll();
+  refreshRates();
+});
+function setManualRate(c){
+  const cur = rateOf(c);
+  const v = prompt(`Cotação manual: 1 ${c} = quantos reais?`, cur ? String(cur).replace('.',',') : '');
+  if(v===null) return;
+  const n = parseMoney(v);
+  if(n===null || n<=0){ toast('Valor inválido'); return; }
+  getRates().manual[c] = n;
+  Store.save();
+  toast(`Cotação de ${c} definida manualmente`);
+  renderAll();
+}
+function clearManualRate(c){
+  delete getRates().manual[c];
+  Store.save();
+  toast(`${c} voltou para a cotação automática`);
+  renderAll();
+}
+function removeCurrency(c){
+  const used = Store.data.accounts.some(a=>(a.currency||BASE)===c) || Store.data.investments.some(i=>(i.currency||BASE)===c);
+  if(c===BASE || used){ toast('Moeda em uso ou base: não pode ser removida'); return; }
+  Store.data.currencies = (Store.data.currencies||[]).filter(x=>x!==c);
+  const r = getRates(); delete r.values[c]; delete r.history[c]; delete r.manual[c]; delete r.asOf[c];
+  Store.save();
+  renderAll();
+}
+window.setManualRate = setManualRate; window.clearManualRate = clearManualRate; window.removeCurrency = removeCurrency;
+
+function renderCurrencyList(){
+  const el = document.getElementById('currencyList');
+  const curs = allCurrencies(), r = getRates();
+  let dn = null;
+  try{ dn = new Intl.DisplayNames(['pt-BR'], {type:'currency'}); }catch(err){}
+  el.innerHTML = curs.map(c=>{
+    const name = dn ? (dn.of(c)||c) : c;
+    const used = Store.data.accounts.some(a=>(a.currency||BASE)===c) || Store.data.investments.some(i=>(i.currency||BASE)===c);
+    let info, btns = '';
+    if(c===BASE) info = 'Moeda base (orçamentos e projeção)';
+    else {
+      const rt = rateOf(c), man = typeof r.manual[c]==='number';
+      info = rt==null ? '<span style="color:var(--gold-stamp);">sem cotação — atualize ou defina manualmente</span>'
+        : `1 ${c} = ${fmtMoney(rt, BASE)} · ${man ? 'manual' : 'cotação de '+(r.asOf[c] ? fmtShortBR(r.asOf[c]) : '—')}`;
+      btns = `<button class="btn small secondary" onclick="setManualRate('${c}')">Cotação manual</button>`
+        + (man ? `<button class="btn small secondary" onclick="clearManualRate('${c}')">Usar automática</button>` : '')
+        + (used ? '' : `<button class="tx-del" onclick="removeCurrency('${c}')" title="Remover moeda">✕</button>`);
+    }
+    return `<div class="rec-item" style="grid-template-columns:1fr auto;">
+      <div><div class="desc">${c} <span style="font-weight:400;color:var(--ink-faint);font-size:12px;">${esc(name)}</span></div><div class="meta">${info}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${btns}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- painel: visão (total convertido ou uma moeda) ---- */
+function renderDashControls(ctx){
+  const st = getSettings(), curs = allCurrencies();
+  [['dashControls','dashViewSel','dashDispSel','dashDispWrap'],['projControls','projViewSel','projDispSel','projDispWrap']].forEach(([box,v,d,w])=>{
+    document.getElementById(box).style.display = curs.length>1 ? 'flex' : 'none';
+    const viewSel = document.getElementById(v), dispSel = document.getElementById(d);
+    viewSel.innerHTML = `<option value="all">Patrimônio total (convertido)</option>` + curs.map(c=>`<option value="${c}">Somente ${c}</option>`).join('');
+    viewSel.value = ctx.filter || 'all';
+    dispSel.innerHTML = curs.map(c=>`<option value="${c}">${c}</option>`).join('');
+    dispSel.value = curs.includes(st.displayCurrency) ? st.displayCurrency : BASE;
+    document.getElementById(w).style.display = ctx.filter ? 'none' : 'flex';
+  });
+}
+['dashViewSel','projViewSel'].forEach(id=> document.getElementById(id).addEventListener('change', (e)=>{
+  getSettings().dashView = e.target.value; Store.save(); renderAll();
+}));
+['dashDispSel','projDispSel'].forEach(id=> document.getElementById(id).addEventListener('change', (e)=>{
+  getSettings().displayCurrency = e.target.value; Store.save(); renderAll();
+}));
+function renderDashHint(ctx){
+  const el = document.getElementById('dashHint');
+  const r = getRates();
+  if(ctx.filter){
+    el.className = 'dash-hint';
+    el.textContent = `Mostrando apenas contas, investimentos e lançamentos em ${ctx.filter}.`;
+    return;
+  }
+  const miss = [...missingRates];
+  if(miss.length){
+    el.className = 'dash-hint warn';
+    el.textContent = `Sem cotação para ${miss.join(', ')}: esses valores ficaram de fora do total. Veja Contas › Moedas e cotações.`;
+  } else {
+    const dates = allCurrencies().filter(c=>c!==BASE).map(c=>r.asOf[c]).filter(Boolean).sort();
+    el.className = 'dash-hint';
+    el.textContent = `Valores convertidos para ${ctx.rep} pela cotação mais recente${dates.length ? ' ('+fmtShortBR(dates[0])+')' : ''} — só como parâmetro visual.`;
+  }
+}
+function sparkline(vals){
+  if(vals.length<2) return '';
+  const w=90, h=26, pad=3, mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
+  const pts = vals.map((v,i)=>`${(pad+i*(w-2*pad)/(vals.length-1)).toFixed(1)},${(h-pad-(v-mn)/rg*(h-2*pad)).toFixed(1)}`);
+  const last = pts[pts.length-1].split(',');
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="var(--accent)"/></svg>`;
+}
+function renderRatesStrip(){
+  const el = document.getElementById('ratesStrip');
+  const curs = allCurrencies().filter(c=>c!==BASE), r = getRates();
+  if(!curs.length){ el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = curs.map(c=>{
+    const rt = rateOf(c);
+    if(rt==null) return `<div class="rate-card"><div><div class="pair">1 ${c} = —</div><div class="meta">sem cotação</div></div></div>`;
+    const h = r.history[c] || {};
+    const vals = Object.keys(h).sort().slice(-7).map(d=>h[d]);
+    let chg = '';
+    if(vals.length>=2){
+      const pct = (vals[vals.length-1]/vals[0]-1)*100;
+      chg = `<span class="chg ${pct>=0?'up':'down'}">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2).replace('.',',')}% na semana</span>`;
+    }
+    const man = typeof r.manual[c]==='number';
+    const src = man ? 'manual' : (r.asOf[c] ? 'cotação de '+fmtShortBR(r.asOf[c]) : '');
+    return `<div class="rate-card"><div><div class="pair">1 ${c} = ${fmtMoney(rt, BASE)}</div><div class="meta">${chg}${chg&&src?' · ':''}${src}</div></div>${sparkline(vals)}</div>`;
+  }).join('') + `<button class="icon-btn rate-refresh" type="button" onclick="refreshRates()">↻ Cotações</button>`;
+}
+
+/* ---- transferência manual entre contas ---- */
+function tfUpdate(){
+  const from = document.getElementById('tfFrom').value, to = document.getElementById('tfTo').value;
+  const cf = accCur(from), ct = accCur(to), same = cf===ct;
+  document.getElementById('tfOutLbl').textContent = `Valor que saiu (${curLabel(cf)})`;
+  document.getElementById('tfInLbl').textContent = `Valor que entrou (${curLabel(ct)})`;
+  document.getElementById('tfInWrap').style.display = same ? 'none' : 'flex';
+  const out = parseFloat(document.getElementById('tfOut').value), inn = parseFloat(document.getElementById('tfIn').value);
+  const hint = document.getElementById('tfHint');
+  if(same){ hint.textContent = 'Mesma moeda: o valor que entra é igual ao que sai.'; return; }
+  if(out>0 && inn>0){
+    hint.textContent = `Cotação efetiva desta transferência: 1 ${ct} = ${fmtMoney(out/inn, cf)} (já considera IOF e taxas, pois vale o que você digitou).`;
+  } else hint.textContent = 'Informe o que realmente saiu e o que realmente entrou: o app não aplica cotação nem calcula IOF aqui.';
+}
+function openTransfer(){
+  const accs = Store.data.accounts;
+  if(accs.length<2){ toast('Cadastre ao menos duas contas para transferir'); return; }
+  const multi = allCurrencies().length>1;
+  const opts = accs.map(a=>`<option value="${a.id}">${esc(a.name)}${multi?` (${a.currency||BASE})`:''}</option>`).join('');
+  document.getElementById('tfFrom').innerHTML = opts;
+  document.getElementById('tfTo').innerHTML = opts;
+  document.getElementById('tfFrom').value = accs[0].id;
+  document.getElementById('tfTo').value = accs[1].id;
+  document.getElementById('tfOut').value = ''; document.getElementById('tfIn').value = '';
+  document.getElementById('tfNote').value = ''; document.getElementById('tfDate').value = todayISO();
+  tfUpdate();
+  openModal('transferModal');
+}
+['tfFrom','tfTo','tfOut','tfIn'].forEach(id=> document.getElementById(id).addEventListener('input', tfUpdate));
+document.getElementById('btnTransferDash').addEventListener('click', openTransfer);
+document.getElementById('btnTransferAcc').addEventListener('click', openTransfer);
+document.getElementById('transferForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const from = document.getElementById('tfFrom').value, to = document.getElementById('tfTo').value;
+  if(from===to){ toast('Escolha contas diferentes'); return; }
+  const out = parseFloat(document.getElementById('tfOut').value);
+  const same = accCur(from)===accCur(to);
+  const inn = same ? out : parseFloat(document.getElementById('tfIn').value);
+  const date = document.getElementById('tfDate').value;
+  if(!(out>0) || !(inn>0) || !date){ toast('Informe os valores e a data'); return; }
+  const note = document.getElementById('tfNote').value.trim() || null;
+  const tid = uid();
+  const base = {category:'Transferência', date, natureza:'esporadico', transfer:true, transferId:tid, note, receiptPhoto:null};
+  Store.data.transactions.push(
+    {...base, id:uid(), type:'expense', description:`Transferência para ${accountName(to)}`, amount:out, accountId:from},
+    {...base, id:uid(), type:'income',  description:`Transferência de ${accountName(from)}`, amount:inn, accountId:to}
+  );
+  Store.save();
+  closeModal('transferModal');
+  toast('Transferência registrada');
+  renderAll();
+});
+
 /* ---------------- Master render ---------------- */
 function renderAll(){
   ensureCardAccounts();
   fillCategorySelects();
   fillAccountSelects();
   fillCardSelects();
+  fillCurrencySelects();
   syncTxAccountLock();
   renderDashboard();
   renderLancamentos();
@@ -3788,10 +4234,12 @@ function renderAll(){
   renderFaturas();
   renderInvoiceView();
   renderContas();
+  renderCurrencyList();
   renderCategorias();
   updateDueAlerts();
 }
 renderAll();
+fetchRates(false).then(r=>{ if(r) renderAll(); }).catch(()=>{});
 
 })();
 </script>
