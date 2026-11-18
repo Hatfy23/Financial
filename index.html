@@ -578,6 +578,18 @@ main{
 .info-btn{background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:50%;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;margin-left:6px;padding:0;vertical-align:middle;}
 .info-btn:hover{color:var(--ink);border-color:var(--gold-stamp);}
 
+.view-actions{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.form-card{display:none;}
+.form-card.in-popup{display:block;background:transparent;border:none;padding:0;box-shadow:none;}
+.form-card.in-popup>.section-title{display:none;}
+.grid-2:has(> .form-card){grid-template-columns:1fr;}
+.modal.wide{max-width:640px;}
+.filters-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.filters-row input[type=search]{grid-column:1/-1;}
+.filters-row input,.filters-row select{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);padding:8px 10px;border-radius:var(--radius-sm);font-size:13px;font-family:var(--font-body);min-width:0;}
+.more-row{display:flex;gap:8px;justify-content:center;padding:12px 0 2px;flex-wrap:wrap;}
+@media(max-width:600px){.filters-row{grid-template-columns:1fr 1fr;}}
+
 /* Modal */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.65);
@@ -738,6 +750,7 @@ select option{background:var(--surface-2);}
         <button class="icon-btn" id="btnExport">⇩ Exportar JSON</button>
         <button class="icon-btn" id="btnInstall" style="display:none;">📲 Instalar app</button>
         <button class="icon-btn" id="btnDue" style="display:none;">🔔 Vencimentos <span class="nav-badge" id="dueBadge" style="margin-left:2px;"></span></button>
+        <button class="icon-btn" id="btnDefaults" title="Padrões e prioridades">⚙ Padrões</button>
         <button class="icon-btn" id="btnTemplate" title="Baixa a planilha já com suas categorias, contas e cartões atuais">⇩ Modelo da planilha</button>
         <button class="icon-btn" id="btnImportSheet">📋 Importar planilha</button>
         <input type="file" id="importSheetFile" accept=".xlsx,.xls,.csv" style="display:none;">
@@ -806,8 +819,9 @@ select option{background:var(--surface-2);}
 
   <!-- LANÇAMENTOS -->
   <div class="view" id="view-lancamentos">
+    <div class="view-actions"><button class="btn" type="button" data-popup="txFormCard" data-title="Novo lançamento">+ Novo lançamento</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="txFormCard" data-title="Novo lançamento">
         <div class="section-title">Novo lançamento</div>
         <form id="txForm">
           <div class="type-toggle" style="margin-bottom:12px;">
@@ -869,10 +883,16 @@ select option{background:var(--surface-2);}
       </div>
 
       <div class="card">
-        <div class="section-title">
-          <span>Histórico</span>
-          <select id="txFilterMonth" style="width:auto;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);padding:5px 8px;border-radius:3px;font-size:12px;"></select>
+        <div class="section-title"><span>Histórico</span><span id="txCount" style="font-size:11px;color:var(--ink-faint);"></span></div>
+        <div class="filters-row">
+          <input type="search" id="txSearch" placeholder="🔍 Buscar: descrição, notas, categoria, conta, valor, data...">
+          <select id="txFilterMonth"></select>
+          <input type="date" id="txFilterDay" title="Ver só um dia">
+          <select id="txFilterAcc"></select>
+          <select id="txFilterType"><option value="">Todos os tipos</option><option value="in">Entradas</option><option value="out">Saídas</option><option value="card">Compras no cartão</option></select>
+          <button type="button" class="btn small secondary" id="txFilterClear">Limpar filtros</button>
         </div>
+        <div id="txFilterSummary" class="imp-line"></div>
         <div id="txList"></div>
       </div>
     </div>
@@ -889,8 +909,9 @@ select option{background:var(--surface-2);}
 
   <!-- A RECEBER -->
   <div class="view" id="view-areceber">
+    <div class="view-actions"><button class="btn" type="button" data-popup="rcvFormCard" data-title="Novo valor a receber">+ Novo a receber</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="rcvFormCard" data-title="Novo valor a receber">
         <div class="section-title" id="rcvFormTitle">Novo valor a receber</div>
         <form id="rcvForm">
           <div class="form-grid">
@@ -952,8 +973,9 @@ select option{background:var(--surface-2);}
 
   <!-- RECORRENTES -->
   <div class="view" id="view-recorrentes">
+    <div class="view-actions"><button class="btn" type="button" data-popup="recFormCard" data-title="Nova recorrência">+ Nova recorrência</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="recFormCard" data-title="Nova recorrência">
         <div class="section-title" id="recFormTitle">Nova recorrência (conta fixa, assinatura, receita)</div>
         <form id="recForm">
           <div class="type-toggle" style="margin-bottom:12px;">
@@ -991,6 +1013,10 @@ select option{background:var(--surface-2);}
             <div class="field" id="recStartWrap" style="display:none;">
               <label>Primeira cobrança (mês/ano)</label>
               <input type="month" id="recStart">
+            </div>
+            <div class="field">
+              <label>Última cobrança (opcional)</label>
+              <input type="month" id="recEnd">
             </div>
             <div class="field">
               <label>Forma de pagamento</label>
@@ -1048,8 +1074,9 @@ select option{background:var(--surface-2);}
 
   <!-- INVESTIMENTOS -->
   <div class="view" id="view-investimentos">
+    <div class="view-actions"><button class="btn" type="button" data-popup="investFormCard" data-title="Novo investimento">+ Novo investimento</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="investFormCard" data-title="Novo investimento">
         <div class="section-title">Novo investimento</div>
         <form id="investForm">
           <div class="form-grid">
@@ -1117,8 +1144,9 @@ select option{background:var(--surface-2);}
 
   <!-- ORÇAMENTO -->
   <div class="view" id="view-orcamento">
+    <div class="view-actions"><button class="btn" type="button" data-popup="budgetFormCard" data-title="Limite de orçamento">+ Definir limite</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="budgetFormCard" data-title="Limite de orçamento">
         <div class="section-title">Definir limite por categoria</div>
         <form id="budgetForm">
           <div class="form-grid">
@@ -1173,8 +1201,9 @@ select option{background:var(--surface-2);}
 
   <!-- FATURAS -->
   <div class="view" id="view-faturas">
+    <div class="view-actions"><button class="btn" type="button" data-popup="cardFormCard" data-title="Novo cartão">+ Novo cartão</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="cardFormCard" data-title="Novo cartão">
         <div class="section-title">Novo cartão</div>
         <form id="cardForm">
           <div class="form-grid">
@@ -1214,6 +1243,7 @@ select option{background:var(--surface-2);}
         <div class="field"><label>Fatura</label><select id="invPeriodSel"></select></div>
         <div class="field"><label>Categoria</label><select id="invCatSel"></select></div>
         <div class="field" id="invSubWrap" style="display:none;"><label>Subcategoria</label><select id="invSubSel"></select></div>
+        <div class="field"><label>Dia (opcional)</label><input type="date" id="invDay"></div>
       </div>
       <div id="invSummary"></div>
       <div class="grid-2" style="margin-top:16px;">
@@ -1227,15 +1257,16 @@ select option{background:var(--surface-2);}
           <div id="invHistChart"></div>
         </div>
       </div>
-      <div class="section-title" style="margin-top:18px;">Lançamentos da fatura</div>
+      <div class="section-title" style="margin-top:18px;" id="invItemsTitle">Lançamentos da fatura</div>
       <div id="invItems"></div>
     </div>
   </div>
 
   <!-- CONTAS -->
   <div class="view" id="view-contas">
+    <div class="view-actions"><button class="btn" type="button" data-popup="accountFormCard" data-title="Nova conta">+ Nova conta</button><button class="btn" type="button" data-popup="categoryFormCard" data-title="Nova categoria / subcategoria">+ Categoria / subcategoria</button></div>
     <div class="grid-2">
-      <div class="card">
+      <div class="card form-card" id="accountFormCard" data-title="Nova conta">
         <div class="section-title">Nova conta / carteira</div>
         <form id="accountForm">
           <div class="field">
@@ -1255,19 +1286,19 @@ select option{background:var(--surface-2);}
       </div>
       <div class="card">
         <div class="section-title"><span>Moedas e cotações</span><button class="btn small" type="button" id="btnRefreshRates">↻ Atualizar</button></div>
-        <form id="currencyForm" style="margin-bottom:12px;">
+        <details style="margin-bottom:12px;"><summary class="btn small secondary" style="display:inline-block;cursor:pointer;">+ Adicionar moeda</summary><form id="currencyForm" style="margin-top:12px;">
           <div class="form-grid">
             <div class="field"><label>Nova moeda (código)</label><input type="text" id="curCode" maxlength="3" placeholder="Ex: EUR, USD, GBP" style="text-transform:uppercase;"></div>
             <div class="field" style="justify-content:flex-end;"><button type="submit" class="btn">Adicionar moeda</button></div>
           </div>
-        </form>
+        </form></details>
         <div id="currencyList"></div>
         <p class="hint" style="margin-top:10px;">As cotações vêm da Frankfurter (cotações de referência, 1x por dia) e servem só como parâmetro visual: painel e totais convertidos. Seus saldos e transferências nunca usam a cotação — valem os valores que você digita. Moeda base: BRL (orçamentos e projeção).</p>
       </div>
     </div>
 
     <div class="grid-2" style="margin-top:16px;">
-      <div class="card">
+      <div class="card form-card" id="categoryFormCard" data-title="Nova categoria / subcategoria">
         <div class="section-title">Nova categoria</div>
         <form id="categoryForm">
           <div class="field">
@@ -1509,6 +1540,33 @@ select option{background:var(--surface-2);}
   <div class="modal">
     <div class="modal-head"><h3>Saldo após pagar as faturas</h3><button class="modal-close" type="button" data-close-modal="balanceInfoModal">×</button></div>
     <div id="balanceInfoBody"></div>
+  </div>
+</div>
+
+<!-- Form popup -->
+<div class="modal-overlay" id="formPopup">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="formPopupTitle"></h3><button class="modal-close" type="button" id="formPopupClose">×</button></div>
+    <div id="formPopupBody"></div>
+  </div>
+</div>
+
+<!-- Defaults modal -->
+<div class="modal-overlay" id="defaultsModal">
+  <div class="modal">
+    <div class="modal-head"><h3>⚙ Padrões e prioridades</h3><button class="modal-close" type="button" data-close-modal="defaultsModal">×</button></div>
+    <form id="defaultsForm">
+      <div class="form-grid">
+        <div class="field"><label>Tipo de lançamento</label><select id="dfType"><option value="expense">Despesa</option><option value="income">Receita</option></select></div>
+        <div class="field"><label>Natureza</label><select id="dfNatureza"><option value="esporadico">Esporádico</option><option value="fatura">Fatura (cartão)</option></select></div>
+        <div class="field"><label>Conta que vem primeiro</label><select id="dfConta"></select></div>
+        <div class="field"><label>Cartão que vem primeiro</label><select id="dfCard"></select></div>
+        <div class="field"><label>Categoria padrão</label><select id="dfCat"></select></div>
+        <div class="field"><label>Pagamento das recorrências</label><select id="dfRecPay"><option value="account">Debitar da conta</option><option value="card">Cartão de crédito</option></select></div>
+      </div>
+      <p class="hint" style="margin-top:8px;">A conta e o cartão escolhidos aparecem primeiro em todas as listas e já vêm selecionados nos formulários.</p>
+      <button type="submit" class="btn full" style="margin-top:12px;">Salvar padrões</button>
+    </form>
   </div>
 </div>
 
@@ -1783,7 +1841,7 @@ function fillCategorySelects(){
   refreshSubSelects();
 }
 function fillAccountSelects(){
-  const accs = Store.data.accounts;
+  const accs = orderedAccounts();
   ['txConta','recConta','cardConta','rcvConta'].forEach(id=>{
     const sel = document.getElementById(id);
     const prev = sel.value;
@@ -1793,7 +1851,7 @@ function fillAccountSelects(){
   });
 }
 function fillCardSelects(){
-  const cards = Store.data.cards;
+  const cards = orderedCards();
   const sel = document.getElementById('txCard');
   const prev = sel.value;
   sel.innerHTML = cards.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
@@ -1890,7 +1948,7 @@ document.getElementById('txForm').addEventListener('submit', (e)=>{
   document.getElementById('txData').value = todayISO();
   document.getElementById('txCardWrap').style.display = 'none';
   document.getElementById('txParcelasWrap').style.display = 'none';
-  setToggleType('txForm', 'expense');
+  applyTxDefaults();
   renderAll();
 });
 
@@ -1905,10 +1963,11 @@ function resetRecForm(){
   document.getElementById('recCancel').style.display = 'none';
   document.getElementById('recActiveWrap').style.display = 'none';
   document.getElementById('recEditHint').style.display = 'none';
+  if(getDefaults().recPay==='card' && Store.data.cards.length) document.getElementById('recPay').value = 'card';
   updateRecPayFields(); updateRecPeriodFields(); updateCurrencyLabels();
   refreshSubSelects();
 }
-document.getElementById('recCancel').addEventListener('click', resetRecForm);
+document.getElementById('recCancel').addEventListener('click', ()=>closeFormPopup());
 
 function startEditRec(id){
   const r = Store.data.recurring.find(x=>x.id===id);
@@ -1923,6 +1982,7 @@ function startEditRec(id){
   document.getElementById('recPeriod').value = std.includes(ev) ? String(ev) : 'x';
   document.getElementById('recEvery').value = std.includes(ev) ? '' : ev;
   document.getElementById('recStart').value = r.startMonth || currentMonthKey();
+  document.getElementById('recEnd').value = r.endMonth || '';
   const viaCard = !!(r.cardId && Store.data.cards.some(c=>c.id===r.cardId));
   document.getElementById('recPay').value = viaCard ? 'card' : 'account';
   if(viaCard) document.getElementById('recCard').value = r.cardId;
@@ -1940,7 +2000,7 @@ function startEditRec(id){
   document.getElementById('recSubmit').textContent = 'Salvar alterações';
   document.getElementById('recCancel').style.display = 'block';
   updateRecPayFields(); updateRecPeriodFields(); updateCurrencyLabels();
-  document.getElementById('recForm').scrollIntoView({behavior:'smooth', block:'start'});
+  openFormPopup('recFormCard');
 }
 window.startEditRec = startEditRec;
 
@@ -1967,11 +2027,13 @@ document.getElementById('recForm').addEventListener('submit', (e)=>{
   const every = per==='x' ? parseInt(document.getElementById('recEvery').value,10) : parseInt(per,10);
   if(isNaN(every) || every<1 || every>60){ toast('Intervalo em meses: de 1 a 60'); return; }
   const start = document.getElementById('recStart').value || currentMonthKey();
+  const endM = document.getElementById('recEnd').value || null;
+  if(endM && endM < (every>1 ? start : currentMonthKey())){ toast('A última cobrança não pode ser antes da primeira'); return; }
   const data = {
     type, description:desc, amount:valor, dayOfMonth:dia,
     isInvoice: isInv, closingDay: isInv ? fech : null, dueDay: isInv ? dia : null,
     category:categoria, subcategory:subcat||null, accountId:conta, cardId,
-    everyMonths: every, startMonth: every>1 ? start : null
+    everyMonths: every, startMonth: every>1 ? start : null, endMonth: endM
   };
   if(recEditId){
     const r = Store.data.recurring.find(x=>x.id===recEditId);
@@ -2560,23 +2622,65 @@ function renderLancamentos(){
   if(!months.includes(curKey)) months.unshift(curKey);
   const prevVal = monthSel.value;
   monthSel.innerHTML = `<option value="all">Todos os meses</option>` + months.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
-  monthSel.value = months.includes(prevVal) ? prevVal : curKey;
-
-  monthSel.onchange = renderTxList;
+  monthSel.value = (prevVal==='all' || months.includes(prevVal)) ? prevVal : curKey;
+  const accSel = document.getElementById('txFilterAcc'), prevAcc = accSel.value;
+  accSel.innerHTML = `<option value="">Todas as contas</option>` + orderedAccounts().map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  accSel.value = Store.data.accounts.some(a=>a.id===prevAcc) ? prevAcc : '';
   renderTxList();
 }
-function renderTxList(){
-  const filter = document.getElementById('txFilterMonth').value;
-  let list = [...Store.data.transactions];
-  if(filter!=='all') list = list.filter(t=>monthKey(t.date)===filter);
-  list.sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
-  const el = document.getElementById('txList');
-  if(!list.length){
-    el.innerHTML = `<div class="empty-state"><div class="stamp">Nenhum lançamento neste período</div></div>`;
-  } else {
-    el.innerHTML = list.map(txRowHTML).join('');
-  }
+function txMatchesSearch(t, terms){
+  const hay = normTxt([t.description, t.note, t.category, t.subcategory, accountName(t.accountId),
+    (t.cardId ? (Store.data.cards.find(c=>c.id===t.cardId)||{}).name : ''), t.date, fmtDateBR(t.date),
+    String(t.amount).replace('.',','), (+t.amount).toFixed(2), (+t.amount).toFixed(2).replace('.',',')].join(' '));
+  return terms.every(x=>hay.includes(x));
 }
+function renderTxList(){
+  const month = document.getElementById('txFilterMonth').value;
+  const day = document.getElementById('txFilterDay').value;
+  const accF = document.getElementById('txFilterAcc').value;
+  const typeF = document.getElementById('txFilterType').value;
+  const q = normTxt(document.getElementById('txSearch').value);
+  const terms = q ? q.split(' ').filter(Boolean) : [];
+  let list = [...Store.data.transactions];
+  // dia específico tem prioridade; com busca, procura em todos os meses
+  if(day) list = list.filter(t=>t.date===day);
+  else if(!terms.length && month!=='all') list = list.filter(t=>monthKey(t.date)===month);
+  if(accF) list = list.filter(t=>t.accountId===accF);
+  if(typeF==='in') list = list.filter(t=>!isCardPurchase(t) && t.type==='income');
+  else if(typeF==='out') list = list.filter(t=>!isCardPurchase(t) && t.type==='expense');
+  else if(typeF==='card') list = list.filter(t=>isCardPurchase(t));
+  if(terms.length) list = list.filter(t=>txMatchesSearch(t, terms));
+  list.sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const g = {};
+  list.forEach(t=>{
+    const c = accCur(t.accountId), x = g[c] = g[c] || {in:0,out:0,card:0};
+    if(isCardPurchase(t)){ if(t.type==='expense') x.card += t.amount; else x.card -= t.amount; }
+    else if(t.type==='income') x.in += t.amount; else x.out += t.amount;
+  });
+  const parts = Object.keys(g).map(c=>{
+    const x = g[c], bits = [];
+    if(x.in) bits.push(`entradas <b>${fmtMoney(x.in,c)}</b>`);
+    if(x.out) bits.push(`saídas <b>${fmtMoney(x.out,c)}</b>`);
+    if(x.card) bits.push(`cartão <b>${fmtMoney(x.card,c)}</b>`);
+    return bits.join(' · ');
+  }).filter(Boolean);
+  const scope = day ? `Dia ${fmtDateBR(day)}` : (terms.length ? 'Busca em todos os meses' : (month==='all' ? 'Todos os meses' : monthLabel(month)));
+  document.getElementById('txCount').textContent = `${list.length} lançamento(s)`;
+  document.getElementById('txFilterSummary').innerHTML = `<b>${scope}</b>${parts.length ? ' — '+parts.join(' &nbsp;|&nbsp; ') : ''}`;
+  const el = document.getElementById('txList');
+  el.innerHTML = list.length
+    ? pagedHTML('txList', list, 20, txRowHTML)
+    : `<div class="empty-state"><div class="stamp">Nenhum lançamento encontrado</div></div>`;
+}
+['txSearch','txFilterMonth','txFilterDay','txFilterAcc','txFilterType'].forEach(id=>{
+  document.getElementById(id).addEventListener(id==='txSearch' ? 'input' : 'change', ()=>{ delete moreState.txList; renderTxList(); });
+});
+document.getElementById('txFilterClear').addEventListener('click', ()=>{
+  document.getElementById('txSearch').value = ''; document.getElementById('txFilterDay').value = '';
+  document.getElementById('txFilterAcc').value = ''; document.getElementById('txFilterType').value = '';
+  document.getElementById('txFilterMonth').value = currentMonthKey();
+  delete moreState.txList; renderTxList();
+});
 
 /* ---------------- Render: Recorrentes ---------------- */
 function recItemHTML(r, mKey){
@@ -2584,15 +2688,17 @@ function recItemHTML(r, mKey){
   const due = recDueIn(r, mKey);
   const isPaid = !!Store.data.recurringLog[r.id+'__'+mKey];
   const paused = r.active===false;
+  const ended = !!(r.endMonth && r.endMonth < mKey);
   let badge, action = '';
   if(paused) badge = `<span class="inv-chip pausada">Pausada</span>`;
+  else if(ended) badge = `<span class="inv-chip pausada">Encerrada</span>`;
   else if(!due){ const nx = recNextDue(r); badge = `<span class="badge pending" style="background:transparent;">${nx ? 'Próxima: '+monthLabel(nx) : '—'}</span>`; }
   else { badge = `<span class="badge ${isPaid?'paid':'pending'}">${isPaid?'Lançado':'Pendente'}</span>`;
          if(!isPaid) action = `<button class="btn small" onclick="launchRecurring('${r.id}','${mKey}')">Lançar</button>`; }
-  return `<div class="rec-item" style="${paused?'opacity:.55;':''}">
+  return `<div class="rec-item" style="${(paused||ended)?'opacity:.55;':''}">
     <div>
       <div class="desc">${esc(r.description)}${card ? ` <span class="tag">💳 ${esc(card.name)}</span>` : ''}</div>
-      <div class="meta">${recDayLabel(r)} · ${esc(catLabel(r.category, r.subcategory))} · <span style="color:${r.type==='income'?'var(--income)':'var(--expense)'}">${r.type==='income'?'+':'-'} ${fmtMoney(r.amount, accCur(r.accountId))}</span></div>
+      <div class="meta">${recDayLabel(r)}${r.endMonth ? ' · até '+monthLabel(r.endMonth) : ''} · ${esc(catLabel(r.category, r.subcategory))} · <span style="color:${r.type==='income'?'var(--income)':'var(--expense)'}">${r.type==='income'?'+':'-'} ${fmtMoney(r.amount, accCur(r.accountId))}</span></div>
     </div>
     ${badge}
     <div style="display:flex;gap:6px;">
@@ -2629,7 +2735,7 @@ function renderRecorrentes(){
     return;
   }
   const grp = grpSel.value;
-  if(!grp){ el.innerHTML = list.map(r=>recItemHTML(r,mKey)).join(''); return; }
+  if(!grp){ el.innerHTML = pagedHTML('recList', list, 12, r=>recItemHTML(r,mKey)); return; }
   // agrupado: total mensal equivalente (receitas − despesas), convertido para BRL
   const groups = {};
   list.forEach(r=>{
@@ -3240,10 +3346,10 @@ function fillEditSelects(extraCat, extraAcc){
   const cats = Store.data.categories.slice();
   if(extraCat && !cats.includes(extraCat)) cats.push(extraCat);
   document.getElementById('edCategoria').innerHTML = cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  const accs = Store.data.accounts;
+  const accs = orderedAccounts();
   const multiCur = allCurrencies().length>1;
   document.getElementById('edConta').innerHTML = accs.map(a=>`<option value="${a.id}">${esc(a.name)}${multiCur?` (${a.currency||BASE})`:''}</option>`).join('');
-  document.getElementById('edCard').innerHTML = Store.data.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  document.getElementById('edCard').innerHTML = orderedCards().map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
 }
 document.getElementById('edNatureza').addEventListener('change', (e)=>{
   document.getElementById('edCardWrap').style.display = (e.target.value==='fatura') ? 'flex' : 'none';
@@ -3931,6 +4037,7 @@ function recEvery(r){ return Math.max(1, parseInt(r.everyMonths,10) || 1); }
 function monthsDiff(a,b){ const [ay,am]=a.split('-').map(Number), [by,bm]=b.split('-').map(Number); return (by-ay)*12 + (bm-am); }
 // a recorrência cai neste mês (YYYY-MM)? Sem mês-âncora = todo mês (recorrências antigas)
 function recDueIn(r, mk){
+  if(r.endMonth && mk > r.endMonth) return false;
   if(!r.startMonth) return true;
   const d = monthsDiff(r.startMonth, mk);
   return d>=0 && d % recEvery(r) === 0;
@@ -4180,11 +4287,21 @@ function renderInvoiceView(){
       <span class="num">${fmtMoney(totals[k], invCur)}</span>
     </div>`).join('');
 
+  const day = document.getElementById('invDay').value;
+  let listItems = filtered, titleTxt = 'Lançamentos da fatura';
+  if(day){   // um dia específico: olha todas as faturas dos cartões escolhidos (para conferir com o banco)
+    const passF = t=> (!cat || t.category===cat) && (!sub || (sub==='__none' ? !t.subcategory : t.subcategory===sub));
+    listItems = byCard.flatMap(({invs})=>invs.flatMap(i=>i.items)).filter(t=>t.date===day && passF(t));
+    const dayTotal = listItems.reduce((x,t)=>x+invSignedIn(t,invCur),0);
+    titleTxt = `Compras de ${fmtDateBR(day)} · ${fmtMoney(dayTotal, invCur)} · ${listItems.length} lançamento(s)`;
+  }
+  document.getElementById('invItemsTitle').textContent = titleTxt;
   const listEl = document.getElementById('invItems');
-  listEl.innerHTML = filtered.length
-    ? [...filtered].sort((a,b)=> b.date.localeCompare(a.date)).map(txRowHTML).join('')
-    : `<div class="empty-state"><div class="stamp">Nenhum lançamento ${cat ? 'neste filtro' : 'nesta fatura'}</div></div>`;
+  listEl.innerHTML = listItems.length
+    ? pagedHTML('invItems', [...listItems].sort((a,b)=> b.date.localeCompare(a.date)), 15, txRowHTML)
+    : `<div class="empty-state"><div class="stamp">Nenhum lançamento ${day ? 'neste dia' : (cat ? 'neste filtro' : 'nesta fatura')}</div></div>`;
 }
+document.getElementById('invDay').addEventListener('change', ()=>{ delete moreState.invItems; renderInvoiceView(); });
 ['invCardSel','invPeriodSel','invCatSel','invSubSel'].forEach(id=>{
   document.getElementById(id).addEventListener('change', ()=>{
     if(id==='invCardSel') document.getElementById('invCatSel').value = '';
@@ -4554,7 +4671,7 @@ function tfUpdate(){
   } else hint.textContent = 'Informe o que realmente saiu e o que realmente entrou: o app não aplica cotação nem calcula IOF aqui.';
 }
 function openTransfer(){
-  const accs = Store.data.accounts;
+  const accs = orderedAccounts();
   if(accs.length<2){ toast('Cadastre ao menos duas contas para transferir'); return; }
   const multi = allCurrencies().length>1;
   const opts = accs.map(a=>`<option value="${a.id}">${esc(a.name)}${multi?` (${a.currency||BASE})`:''}</option>`).join('');
@@ -4620,7 +4737,7 @@ function resetRcvForm(){
   document.getElementById('rcvParcWrap').style.display = 'flex';
   updateCurrencyLabels();
 }
-document.getElementById('rcvCancel').addEventListener('click', resetRcvForm);
+document.getElementById('rcvCancel').addEventListener('click', ()=>closeFormPopup());
 document.getElementById('rcvData').value = todayISO();
 
 function startEditRcv(id){
@@ -4641,7 +4758,7 @@ function startEditRcv(id){
   document.getElementById('rcvSubmit').textContent = 'Salvar alterações';
   document.getElementById('rcvCancel').style.display = 'block';
   updateCurrencyLabels();
-  document.getElementById('rcvForm').scrollIntoView({behavior:'smooth', block:'start'});
+  openFormPopup('rcvFormCard');
 }
 window.startEditRcv = startEditRcv;
 
@@ -4694,7 +4811,7 @@ function renderReceivables(){
     el.innerHTML = `<div class="empty-state"><div class="stamp">${all.length ? 'Nada neste filtro' : 'Nada a receber cadastrado'}</div></div>`;
     return;
   }
-  el.innerHTML = list.map(x=>{
+  el.innerHTML = pagedHTML('rcvList', list, 10, x=>{
     const st = rcvStatus(x), cur = accCur(x.accountId);
     const when = x.status==='recebido' ? `recebido em ${fmtDateBR(x.receivedDate)}` : `previsto ${fmtDateBR(x.expectedDate)}`;
     const shown = x.status==='recebido' && x.receivedAmount!=null ? x.receivedAmount : x.amount;
@@ -4713,7 +4830,7 @@ function renderReceivables(){
         <button class="tx-del" onclick="deleteRcv('${x.id}')" title="Excluir">✕</button>
       </div>
     </div>`;
-  }).join('');
+  });
 }
 document.getElementById('rcvFilter').addEventListener('change', renderReceivables);
 
@@ -4982,8 +5099,131 @@ function downloadImportTemplate(){
 }
 document.getElementById('btnTemplate').addEventListener('click', downloadImportTemplate);
 
+/* =====================================================================
+   Pop-ups de cadastro, padrões/prioridades e "Ver mais" nas listas
+   ===================================================================== */
+let popupState = {card:null, ph:null, id:null};
+let popupSubmitting = false;
+document.addEventListener('submit', ()=>{ popupSubmitting = true; setTimeout(()=>{ popupSubmitting = false; }, 0); }, true);
+const FORM_ON_OPEN = {
+  txFormCard: ()=>{ document.getElementById('txForm').reset(); document.getElementById('txData').value = todayISO(); applyTxDefaults(); },
+  recFormCard: ()=>resetRecForm(),
+  rcvFormCard: ()=>resetRcvForm()
+};
+const FORM_ON_CLOSE = { recFormCard: ()=>resetRecForm(), rcvFormCard: ()=>resetRcvForm() };
+function openFormPopup(cardId, title){
+  const card = document.getElementById(cardId);
+  if(!card) return;
+  if(popupState.card) closeFormPopup(true);
+  const ph = document.createComment('form-card');
+  card.parentNode.insertBefore(ph, card);
+  popupState = {card, ph, id:cardId};
+  card.classList.add('in-popup');
+  document.getElementById('formPopupBody').appendChild(card);
+  const st = card.querySelector('.section-title');
+  document.getElementById('formPopupTitle').textContent = (st && st.textContent.trim()) || title || card.dataset.title || '';
+  openModal('formPopup');
+}
+function closeFormPopup(silent){
+  if(!popupState.card) return;
+  const {card, ph, id} = popupState;
+  card.classList.remove('in-popup');
+  ph.parentNode.insertBefore(card, ph); ph.remove();
+  popupState = {card:null, ph:null, id:null};
+  closeModal('formPopup');
+  if(!silent && FORM_ON_CLOSE[id]) FORM_ON_CLOSE[id]();
+}
+document.getElementById('formPopupClose').addEventListener('click', ()=>closeFormPopup());
+document.getElementById('formPopup').addEventListener('mousedown', e=>{ if(e.target.id==='formPopup') closeFormPopup(); });
+document.addEventListener('click', (e)=>{
+  const b = e.target.closest('[data-popup]');
+  if(!b) return;
+  const id = b.dataset.popup;
+  if(FORM_ON_OPEN[id]) FORM_ON_OPEN[id]();
+  openFormPopup(id, b.dataset.title);
+});
+
+/* ---- "Ver mais" / "Lista completa" ---- */
+const moreState = {};
+function pagedHTML(key, arr, step, rowFn){
+  const shown = Math.min(arr.length, moreState[key] || step);
+  let html = arr.slice(0, shown).map(rowFn).join('');
+  if(shown < arr.length){
+    html += `<div class="more-row"><button type="button" class="btn small secondary" data-more="${key}" data-step="${step}">Ver mais (+${Math.min(step, arr.length-shown)})</button><button type="button" class="btn small secondary" data-all="${key}">Lista completa (${arr.length})</button></div>`;
+  } else if(arr.length > step){
+    html += `<div class="more-row"><button type="button" class="btn small secondary" data-less="${key}">Mostrar menos</button></div>`;
+  }
+  return html;
+}
+document.addEventListener('click', (e)=>{
+  const b = e.target.closest('[data-more],[data-all],[data-less]');
+  if(!b) return;
+  if(b.dataset.more){ const st = +b.dataset.step; moreState[b.dataset.more] = (moreState[b.dataset.more] || st) + st; }
+  else if(b.dataset.all) moreState[b.dataset.all] = 1e9;
+  else delete moreState[b.dataset.less];
+  renderAll();
+});
+
+/* ---- padrões e prioridades ---- */
+function getDefaults(){ const st = getSettings(); if(!st.defaults || typeof st.defaults!=='object') st.defaults = {}; return st.defaults; }
+function orderedAccounts(){
+  const a = Store.data.accounts.slice(), id = getDefaults().accountId;
+  const i = id ? a.findIndex(x=>x.id===id) : -1;
+  if(i>0) a.unshift(a.splice(i,1)[0]);
+  return a;
+}
+function orderedCards(){
+  const c = Store.data.cards.slice(), id = getDefaults().cardId;
+  const i = id ? c.findIndex(x=>x.id===id) : -1;
+  if(i>0) c.unshift(c.splice(i,1)[0]);
+  return c;
+}
+function applyTxDefaults(){
+  const d = getDefaults();
+  setToggleType('txForm', d.type || 'expense');
+  const nat = document.getElementById('txNatureza');
+  nat.value = (d.natureza==='fatura' && Store.data.cards.length) ? 'fatura' : 'esporadico';
+  nat.dispatchEvent(new Event('change'));
+  const conta = document.getElementById('txConta'); if(conta.options.length) conta.selectedIndex = 0;
+  const card = document.getElementById('txCard'); if(card.options.length) card.selectedIndex = 0;
+  const cat = document.getElementById('txCategoria');
+  if(d.category && [...cat.options].some(o=>o.value===d.category)) cat.value = d.category;
+  refreshSubSelects(); syncTxAccountLock();
+}
+document.getElementById('btnDefaults').addEventListener('click', ()=>{
+  const d = getDefaults();
+  document.getElementById('dfType').value = d.type || 'expense';
+  document.getElementById('dfNatureza').value = d.natureza==='fatura' ? 'fatura' : 'esporadico';
+  document.getElementById('dfRecPay').value = d.recPay==='card' ? 'card' : 'account';
+  const multi = allCurrencies().length>1;
+  document.getElementById('dfConta').innerHTML = Store.data.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}${multi?` (${a.currency||BASE})`:''}</option>`).join('');
+  document.getElementById('dfConta').value = (d.accountId && Store.data.accounts.some(a=>a.id===d.accountId)) ? d.accountId : (Store.data.accounts[0]||{}).id;
+  document.getElementById('dfCard').innerHTML = `<option value="">(primeiro da lista)</option>` + Store.data.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  document.getElementById('dfCard').value = (d.cardId && Store.data.cards.some(c=>c.id===d.cardId)) ? d.cardId : '';
+  document.getElementById('dfCat').innerHTML = `<option value="">(primeira da lista)</option>` + Store.data.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  document.getElementById('dfCat').value = Store.data.categories.includes(d.category) ? d.category : '';
+  openModal('defaultsModal');
+});
+document.getElementById('defaultsModal').addEventListener('mousedown', e=>{ if(e.target.id==='defaultsModal') closeModal('defaultsModal'); });
+document.getElementById('defaultsForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const d = getDefaults();
+  d.type = document.getElementById('dfType').value;
+  d.natureza = document.getElementById('dfNatureza').value;
+  d.accountId = document.getElementById('dfConta').value || null;
+  d.cardId = document.getElementById('dfCard').value || null;
+  d.category = document.getElementById('dfCat').value || null;
+  d.recPay = document.getElementById('dfRecPay').value;
+  Store.save();
+  closeModal('defaultsModal');
+  toast('Padrões salvos');
+  renderAll();
+  applyTxDefaults();
+});
+
 /* ---------------- Master render ---------------- */
 function renderAll(){
+  if(popupSubmitting && popupState.card) closeFormPopup(true);
   ensureCardAccounts();
   fillCategorySelects();
   fillAccountSelects();
@@ -5006,6 +5246,7 @@ function renderAll(){
   updateDueAlerts();
 }
 renderAll();
+applyTxDefaults();
 fetchRates(false).then(r=>{ if(r) renderAll(); }).catch(()=>{});
 
 })();
