@@ -590,6 +590,11 @@ main{
 .more-row{display:flex;gap:8px;justify-content:center;padding:12px 0 2px;flex-wrap:wrap;}
 @media(max-width:600px){.filters-row{grid-template-columns:1fr 1fr;}}
 
+.val-chip{display:block;margin-top:5px;text-align:left;background:transparent;border:1px dashed var(--gold-stamp);color:var(--gold-stamp);border-radius:var(--radius-sm);font-size:11.5px;padding:5px 9px;cursor:pointer;font-family:var(--font-body);line-height:1.4;}
+.val-chip:hover{background:var(--surface-2);}
+#projChart{position:relative;}
+.proj-tip{position:absolute;z-index:20;max-width:360px;background:var(--surface);border:1px solid var(--gold-stamp);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,.5);pointer-events:none;}
+
 /* Modal */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.65);
@@ -835,7 +840,7 @@ select option{background:var(--surface-2);}
             </div>
             <div class="field">
               <label id="txValorLbl">Valor (R$)</label>
-              <input type="number" id="txValor" step="0.01" min="0" required placeholder="0,00">
+              <input type="text" inputmode="decimal" autocomplete="off" id="txValor" required placeholder="0,00"><button type="button" class="val-chip" data-chip-for="txValor" style="display:none;"></button>
             </div>
             <div class="field">
               <label>Data</label>
@@ -930,7 +935,7 @@ select option{background:var(--surface-2);}
             </div>
             <div class="field">
               <label id="rcvValorLbl">Valor (R$)</label>
-              <input type="number" id="rcvValor" step="0.01" min="0" required>
+              <input type="text" inputmode="decimal" autocomplete="off" id="rcvValor" required><button type="button" class="val-chip" data-chip-for="rcvValor" style="display:none;"></button>
             </div>
             <div class="field">
               <label>Data prevista</label>
@@ -989,7 +994,7 @@ select option{background:var(--surface-2);}
             </div>
             <div class="field">
               <label id="recValorLbl">Valor (R$)</label>
-              <input type="number" id="recValor" step="0.01" min="0" required>
+              <input type="text" inputmode="decimal" autocomplete="off" id="recValor" required><button type="button" class="val-chip" data-chip-for="recValor" style="display:none;"></button>
             </div>
             <div class="field">
               <label id="recDiaLbl">Dia do vencimento</label>
@@ -1097,7 +1102,7 @@ select option{background:var(--surface-2);}
             </div>
             <div class="field">
               <label>Valor aportado</label>
-              <input type="number" id="invValor" step="0.01" min="0" required>
+              <input type="text" inputmode="decimal" autocomplete="off" id="invValor" required><button type="button" class="val-chip" data-chip-for="invValor" style="display:none;"></button>
             </div>
             <div class="field">
               <label>Moeda</label>
@@ -1160,7 +1165,7 @@ select option{background:var(--surface-2);}
             </div>
             <div class="field">
               <label>Limite mensal (R$)</label>
-              <input type="number" id="budLimite" step="0.01" min="0" required>
+              <input type="text" inputmode="decimal" autocomplete="off" id="budLimite" required><button type="button" class="val-chip" data-chip-for="budLimite" style="display:none;"></button>
             </div>
           </div>
           <p class="hint">Limite da categoria soma todas as subcategorias. Escolhendo uma subcategoria, o limite vale só para ela (você pode ter os dois).</p>
@@ -1184,12 +1189,14 @@ select option{background:var(--surface-2);}
     <div class="card">
       <div class="section-title">Projeção — próximos 6 meses</div>
       <div id="projChart"></div>
+      <div class="section-title" style="margin:18px 0 8px 0;">Mês a mês <span style="font-size:11px;color:var(--ink-faint);">(passe o mouse ou toque nos meses do gráfico)</span></div>
+      <div id="projBrief"></div>
       <div class="legend">
         <div class="legend-item"><span class="legend-dot" style="background:var(--accent);"></span>Saldo em conta</div>
         <div class="legend-item"><span class="legend-dot" style="background:var(--income);"></span>Patrimônio total (saldo + investimentos)</div>
       </div>
       <p style="font-size:12px;color:var(--ink-faint);margin-top:10px;line-height:1.6;">
-        O saldo em conta é calculado a partir das recorrências ativas somadas aos lançamentos que você já cadastrou com data nos meses futuros (ex: uma fatura específica lançada em dezembro entra só no acumulado de dezembro). O patrimônio total soma a esse saldo o valor projetado dos seus investimentos com rendimento configurado, mês a mês, em juros compostos.
+        O saldo em conta é calculado a partir das recorrências ativas somadas aos lançamentos que você já cadastrou com data nos meses futuros (ex: uma fatura específica lançada em dezembro entra só no acumulado de dezembro). O patrimônio total soma a esse saldo o valor projetado dos seus investimentos com rendimento configurado, mês a mês, em juros compostos. Faturas de cartão já lançadas (inclusive parcelas futuras) entram no mês do vencimento, e assinaturas no cartão também.
       </p>
     </div>
 
@@ -1357,7 +1364,7 @@ select option{background:var(--surface-2);}
         </div>
         <div class="field">
           <label>Valor</label>
-          <input type="number" id="qkValor" step="0.01" min="0" placeholder="0,00">
+          <input type="text" inputmode="decimal" autocomplete="off" id="qkValor" placeholder="0,00"><button type="button" class="val-chip" data-chip-for="qkValor" style="display:none;"></button>
         </div>
         <div class="field" style="grid-column:1/-1;">
           <label>Descrição</label>
@@ -1390,7 +1397,7 @@ select option{background:var(--surface-2);}
         </div>
         <div class="field">
           <label id="edValorLbl">Valor (R$)</label>
-          <input type="number" id="edValor" step="0.01" min="0" required>
+          <input type="text" inputmode="decimal" autocomplete="off" id="edValor" required><button type="button" class="val-chip" data-chip-for="edValor" style="display:none;"></button>
         </div>
         <div class="field">
           <label>Data</label>
@@ -1446,7 +1453,7 @@ select option{background:var(--surface-2);}
     <form id="launchForm">
       <div class="field">
         <label id="lcValorLbl">Valor deste mês (R$)</label>
-        <input type="number" id="lcValor" step="0.01" min="0" required>
+        <input type="text" inputmode="decimal" autocomplete="off" id="lcValor" required><button type="button" class="val-chip" data-chip-for="lcValor" style="display:none;"></button>
         <p class="hint" id="lcDefaultHint"></p>
         <label class="check-row" id="lcUpdateDefaultWrap" style="display:none;"><input type="checkbox" id="lcUpdateDefault"> Atualizar também o valor padrão da recorrência</label>
       </div>
@@ -1509,8 +1516,8 @@ select option{background:var(--surface-2);}
       <div class="form-grid">
         <div class="field"><label>De</label><select id="tfFrom"></select></div>
         <div class="field"><label>Para</label><select id="tfTo"></select></div>
-        <div class="field"><label id="tfOutLbl">Valor que saiu</label><input type="number" id="tfOut" step="0.01" min="0" required></div>
-        <div class="field" id="tfInWrap"><label id="tfInLbl">Valor que entrou</label><input type="number" id="tfIn" step="0.01" min="0"></div>
+        <div class="field"><label id="tfOutLbl">Valor que saiu</label><input type="text" inputmode="decimal" autocomplete="off" id="tfOut" required><button type="button" class="val-chip" data-chip-for="tfOut" style="display:none;"></button></div>
+        <div class="field" id="tfInWrap"><label id="tfInLbl">Valor que entrou</label><input type="text" inputmode="decimal" autocomplete="off" id="tfIn"><button type="button" class="val-chip" data-chip-for="tfIn" style="display:none;"></button></div>
         <div class="field"><label>Data</label><input type="date" id="tfDate" required></div>
         <div class="field"><label>Notas (opcional)</label><input type="text" id="tfNote" placeholder="Ex: Wise, IOF incluso"></div>
       </div>
@@ -1527,7 +1534,7 @@ select option{background:var(--surface-2);}
     <form id="receiveForm">
       <p class="imp-line" id="rcSummary"></p>
       <div class="form-grid">
-        <div class="field"><label id="rcValorLbl">Valor recebido</label><input type="number" id="rcValor" step="0.01" min="0" required></div>
+        <div class="field"><label id="rcValorLbl">Valor recebido</label><input type="text" inputmode="decimal" autocomplete="off" id="rcValor" required><button type="button" class="val-chip" data-chip-for="rcValor" style="display:none;"></button></div>
         <div class="field"><label>Data do recebimento</label><input type="date" id="rcDate" required></div>
       </div>
       <button type="submit" class="btn full" style="margin-top:14px;">Confirmar recebimento</button>
@@ -1897,7 +1904,7 @@ document.getElementById('txForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const type = document.getElementById('txForm').dataset.currentType;
   const desc = document.getElementById('txDesc').value.trim();
-  const valorTotal = parseFloat(document.getElementById('txValor').value);
+  const valorTotal = numField('txValor');
   const data = document.getElementById('txData').value;
   const categoria = document.getElementById('txCategoria').value;
   const natureza = document.getElementById('txNatureza').value;
@@ -1975,7 +1982,7 @@ function startEditRec(id){
   recEditId = id;
   setToggleType('recForm', r.type);
   document.getElementById('recDesc').value = r.description;
-  document.getElementById('recValor').value = Math.round(r.amount*100)/100;
+  document.getElementById('recValor').value = fmtBR(r.amount);
   document.getElementById('recDia').value = r.dueDay || r.dayOfMonth;
   const ev = recEvery(r);
   const std = [1,2,3,6,12];
@@ -2008,7 +2015,7 @@ document.getElementById('recForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const type = document.getElementById('recForm').dataset.currentType;
   const desc = document.getElementById('recDesc').value.trim();
-  const valor = parseFloat(document.getElementById('recValor').value);
+  const valor = numField('recValor');
   const dia = parseInt(document.getElementById('recDia').value,10);
   const categoria = document.getElementById('recCategoria').value;
   const subcat = document.getElementById('recSub').value;
@@ -2078,7 +2085,7 @@ document.getElementById('investForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const nome = document.getElementById('invNome').value.trim();
   const tipo = document.getElementById('invTipo').value;
-  const valor = parseFloat(document.getElementById('invValor').value);
+  const valor = numField('invValor');
   if(!nome || isNaN(valor) || valor<=0){ toast('Preencha os campos corretamente'); return; }
   const yieldMode = document.getElementById('invYieldMode').value;
   const inv = {
@@ -2115,7 +2122,7 @@ document.getElementById('investForm').addEventListener('submit', (e)=>{
 document.getElementById('budgetForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const categoria = document.getElementById('budCategoria').value;
-  const limite = parseFloat(document.getElementById('budLimite').value);
+  const limite = numField('budLimite');
   if(isNaN(limite) || limite<=0){ toast('Informe um limite válido'); return; }
   const sub = document.getElementById('budSub').value || null;
   const existing = Store.data.budgets.find(b=>b.category===categoria && (b.subcategory||null)===sub);
@@ -2856,7 +2863,14 @@ function renderProjecao(){
   // fluxo previsto por mês futuro: recorrências (por periodicidade), faturas de cartão a pagar e valores a receber
   const monthKeys = []; for(let k=1;k<=6;k++) monthKeys.push(monthKeyShift(k));
   const flow = {}; monthKeys.forEach(k=>{ flow[k] = 0; });
-  const addFlow = (mk, v)=>{ if(mk in flow) flow[mk] += v; };
+  const detail = {}; monthKeys.forEach(k=>{ detail[k] = {in:0, out:0, items:{}}; });
+  const addFlow = (mk, v, label)=>{
+    if(!(mk in flow)) return;
+    flow[mk] += v;
+    const d = detail[mk];
+    if(v>=0) d.in += v; else d.out += -v;
+    if(label) d.items[label] = (d.items[label]||0) + v;
+  };
   Store.data.recurring.filter(r=>r.active!==false).forEach(r=>{
     const cur = accCur(r.accountId);
     if(ctx.filter && cur!==ctx.filter) return;
@@ -2870,17 +2884,18 @@ function renderProjecao(){
         const inf = invoiceInfo(card, invoiceKeyFor(card, isoYMD(y, m-1, clampDay(y, m-1, r.dayOfMonth))));
         cashKey = (inf.due || inf.end).slice(0,7);
       }
-      addFlow(cashKey, convertAmt(sgn*r.amount, cur, rep));
+      addFlow(cashKey, convertAmt(sgn*r.amount, cur, rep), card ? `fatura ${r.category}` : r.category);
     });
   });
   Store.data.cards.forEach(card=>{
     const cur = cardCur(card);
     if(ctx.filter && cur!==ctx.filter) return;
     cardInvoices(card).filter(i=>i.unpaid).forEach(inv=>{
-      const pend = inv.items.filter(t=>t.pendingInvoice).reduce((x,t)=>x+invSigned(t),0);
       let key = (inv.info.due || inv.info.end).slice(0,7);
       if(key < monthKeys[0]) key = monthKeys[0];
-      addFlow(key, -convertAmt(pend, cur, rep));
+      const byCat = {};
+      inv.items.filter(t=>t.pendingInvoice).forEach(t=>{ byCat[t.category] = (byCat[t.category]||0) + invSigned(t); });
+      Object.keys(byCat).forEach(c=> addFlow(key, -convertAmt(byCat[c], cur, rep), `fatura ${c}`));
     });
   });
   getRcv().filter(x=>x.status!=='recebido').forEach(x=>{
@@ -2888,7 +2903,7 @@ function renderProjecao(){
     if(ctx.filter && cur!==ctx.filter) return;
     let key = x.expectedDate.slice(0,7);
     if(key < monthKeys[0]) key = monthKeys[0];
-    addFlow(key, convertAmt(x.amount, cur, rep));
+    addFlow(key, convertAmt(x.amount, cur, rep), 'a receber');
   });
 
   const investList = Store.data.investments.filter(i=> !ctx.filter || (i.currency||BASE)===ctx.filter);
@@ -2900,15 +2915,17 @@ function renderProjecao(){
   const cashPoints = [{label:'Hoje', value:balance}];
   const totalPoints = [{label:'Hoje', value:balance+investTotalNow}];
   const investRows = [];
+  const projMonths = [];
   for(let i=1;i<=6;i++){
     const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
     const mk = monthKeys[i-1];
     // Lançamentos já cadastrados com data futura dentro deste mês (não gerados por recorrência,
     // para não contar em dobro com o recurringNet acima).
-    const scheduledNet = Store.data.transactions
+    Store.data.transactions
       .filter(t=> monthKey(t.date)===mk && !t.recurringId && isCounted(t) && !t.transfer && inCtx(t,ctx))
-      .reduce((s,t)=> s + (t.type==='income'?txAmt(t,ctx):-txAmt(t,ctx)), 0);
-    balance += (flow[mk]||0) + scheduledNet;
+      .forEach(t=> addFlow(mk, (t.type==='income'?1:-1)*txAmt(t,ctx), t.category));
+    balance += (flow[mk]||0);
+    projMonths.push({label: monthLabel(mk), balance, ...detail[mk]});
 
     const investValueMonth = investList.reduce((s,inv)=> s + invBase(inv, investProjectedValue(inv, i)), 0);
     const investGainMonth = investList.reduce((s,inv)=> s + invBase(inv, investMonthlyGain(inv, i)), 0);
@@ -2938,6 +2955,8 @@ function renderProjecao(){
     <text x="${xFor(i)}" y="${yFor(p.value)-10}" text-anchor="middle" fill="var(--ink-dim)" font-size="9" font-family="monospace">${fmtMoney(p.value, rep)}</text>
   `).join('');
 
+  const hits = projMonths.map((m,i)=>`<rect data-pm="${i}" x="${xFor(i+1)-xStep/2}" y="0" width="${xStep}" height="${h}" fill="transparent" style="cursor:pointer;"/>`).join('');
+  projState.months = projMonths; projState.rep = rep;
   let totalPath = '', totalDots = '';
   if(hasYield){
     totalPath = buildPath(totalPoints);
@@ -2955,7 +2974,9 @@ function renderProjecao(){
     ${labels}
     ${cashDots}
     ${totalDots}
-  </svg>`;
+    ${hits}
+  </svg><div id="projTip" class="proj-tip" style="display:none;"></div>`;
+  document.getElementById('projBrief').innerHTML = projMonths.map(m=>`<div class="imp-line" style="border-bottom:1px solid var(--line);padding-bottom:8px;">${projMonthHTML(m)}</div>`).join('');
 
   const hint = document.getElementById('projHint');
   const miss = [...missingRates];
@@ -3219,7 +3240,7 @@ function renderCategorias(){
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDateBR(iso){ return new Date(iso+'T12:00:00').toLocaleDateString('pt-BR'); }
 function getDrafts(){ if(!Array.isArray(Store.data.drafts)) Store.data.drafts = []; return Store.data.drafts; }
-function openModal(id){ document.getElementById(id).classList.add('active'); }
+function openModal(id){ document.getElementById(id).classList.add('active'); updateAllValChips(); }
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
 function compressImage(file){
   return new Promise((resolve,reject)=>{
@@ -3271,7 +3292,7 @@ document.getElementById('qkFoto').addEventListener('change', async (e)=>{
 });
 document.getElementById('quickForm').addEventListener('submit', (e)=>{
   e.preventDefault();
-  const valor = parseFloat(document.getElementById('qkValor').value);
+  const valor = numField('qkValor');
   const desc = document.getElementById('qkDesc').value.trim();
   const nota = document.getElementById('qkNota').value.trim();
   if(!quickPhoto && isNaN(valor) && !desc && !nota){ toast('Adicione ao menos uma foto, valor ou descrição'); return; }
@@ -3391,7 +3412,7 @@ function editTx(id){
   document.getElementById('edSubmit').textContent = 'Salvar alterações';
   document.getElementById('edDesc').value = t.description;
   document.getElementById('edTipo').value = t.type;
-  document.getElementById('edValor').value = Math.round(t.amount*100)/100;
+  document.getElementById('edValor').value = fmtBR(t.amount);
   document.getElementById('edData').value = t.date;
   document.getElementById('edCategoria').value = t.category;
   fillSubSelect('edSub','edSubWrap', t.category, t.subcategory||'', 'Geral (sem subcategoria)');
@@ -3421,7 +3442,7 @@ function finalizeDraft(id){
   document.getElementById('edSubmit').textContent = 'Lançar';
   document.getElementById('edDesc').value = d.description || '';
   document.getElementById('edTipo').value = d.type || 'expense';
-  document.getElementById('edValor').value = d.amount!=null ? d.amount : '';
+  document.getElementById('edValor').value = d.amount!=null ? fmtBR(d.amount) : '';
   document.getElementById('edData').value = d.date || todayISO();
   const cats = Store.data.categories;
   document.getElementById('edCategoria').value = cats.includes('Outros') ? 'Outros' : cats[0];
@@ -3442,7 +3463,7 @@ document.getElementById('editForm').addEventListener('submit', (e)=>{
   if(!editCtx) return;
   const type = document.getElementById('edTipo').value;
   const desc = document.getElementById('edDesc').value.trim();
-  const valor = parseFloat(document.getElementById('edValor').value);
+  const valor = numField('edValor');
   const data = document.getElementById('edData').value;
   const categoria = document.getElementById('edCategoria').value;
   const natureza = document.getElementById('edNatureza').value;
@@ -3520,7 +3541,7 @@ function openLaunchModal(recId, mKey){
   document.getElementById('lcTitle').textContent = 'Lançar: ' + rec.description;
   const lcCur = accCur(rec.accountId);
   document.getElementById('lcValorLbl').textContent = `Valor deste mês (${lcCur==='BRL'?'R$':lcCur})`;
-  document.getElementById('lcValor').value = Math.round(rec.amount*100)/100;
+  document.getElementById('lcValor').value = fmtBR(rec.amount);
   document.getElementById('lcDefaultHint').textContent = `Valor padrão: ${fmtMoney(rec.amount, lcCur)}. Ajustar aqui não muda o padrão.` + ((rec.cardId && Store.data.cards.some(c=>c.id===rec.cardId)) ? ` Cobrança no cartão ${Store.data.cards.find(c=>c.id===rec.cardId).name}: entra na fatura, sem debitar a conta agora.` : '');
   document.getElementById('lcUpdateDefault').checked = false;
   document.getElementById('lcUpdateDefaultWrap').style.display = 'none';
@@ -3543,7 +3564,7 @@ function openLaunchModal(recId, mKey){
 document.getElementById('lcValor').addEventListener('input', ()=>{
   if(!launchCtx) return;
   const rec = Store.data.recurring.find(r=>r.id===launchCtx.recId);
-  const v = parseFloat(document.getElementById('lcValor').value);
+  const v = numField('lcValor');
   const differs = rec && !isNaN(v) && Math.abs(v - rec.amount) > 0.004;
   document.getElementById('lcUpdateDefaultWrap').style.display = differs ? 'flex' : 'none';
   if(!differs) document.getElementById('lcUpdateDefault').checked = false;
@@ -3562,7 +3583,7 @@ document.getElementById('launchForm').addEventListener('submit', (e)=>{
   if(!rec){ closeModal('launchModal'); return; }
   const logKey = recId+'__'+mKey;
   if(Store.data.recurringLog[logKey]){ closeModal('launchModal'); return; }
-  const valor = parseFloat(document.getElementById('lcValor').value);
+  const valor = numField('lcValor');
   if(isNaN(valor) || valor<=0){ toast('Informe um valor válido'); return; }
   const mode = document.querySelector('input[name="lcDateMode"]:checked').value;
   let dateStr = planned;
@@ -4663,7 +4684,7 @@ function tfUpdate(){
   document.getElementById('tfOutLbl').textContent = `Valor que saiu (${curLabel(cf)})`;
   document.getElementById('tfInLbl').textContent = `Valor que entrou (${curLabel(ct)})`;
   document.getElementById('tfInWrap').style.display = same ? 'none' : 'flex';
-  const out = parseFloat(document.getElementById('tfOut').value), inn = parseFloat(document.getElementById('tfIn').value);
+  const out = numField('tfOut'), inn = numField('tfIn');
   const hint = document.getElementById('tfHint');
   if(same){ hint.textContent = 'Mesma moeda: o valor que entra é igual ao que sai.'; return; }
   if(out>0 && inn>0){
@@ -4691,9 +4712,9 @@ document.getElementById('transferForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const from = document.getElementById('tfFrom').value, to = document.getElementById('tfTo').value;
   if(from===to){ toast('Escolha contas diferentes'); return; }
-  const out = parseFloat(document.getElementById('tfOut').value);
+  const out = numField('tfOut');
   const same = accCur(from)===accCur(to);
-  const inn = same ? out : parseFloat(document.getElementById('tfIn').value);
+  const inn = same ? out : numField('tfIn');
   const date = document.getElementById('tfDate').value;
   if(!(out>0) || !(inn>0) || !date){ toast('Informe os valores e a data'); return; }
   const note = document.getElementById('tfNote').value.trim() || null;
@@ -4746,7 +4767,7 @@ function startEditRcv(id){
   rcvEditId = id;
   document.getElementById('rcvDesc').value = x.description;
   document.getElementById('rcvKind').value = x.kind || 'outro';
-  document.getElementById('rcvValor').value = Math.round(x.amount*100)/100;
+  document.getElementById('rcvValor').value = fmtBR(x.amount);
   document.getElementById('rcvData').value = x.expectedDate;
   document.getElementById('rcvConta').value = x.accountId;
   const cs = document.getElementById('rcvCategoria');
@@ -4765,7 +4786,7 @@ window.startEditRcv = startEditRcv;
 document.getElementById('rcvForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const desc = document.getElementById('rcvDesc').value.trim();
-  const valor = parseFloat(document.getElementById('rcvValor').value);
+  const valor = numField('rcvValor');
   const data = document.getElementById('rcvData').value;
   const conta = document.getElementById('rcvConta').value;
   const cat = document.getElementById('rcvCategoria').value;
@@ -4853,7 +4874,7 @@ function openReceive(id){
   document.getElementById('rcTitle').textContent = 'Receber: ' + x.description;
   document.getElementById('rcSummary').innerHTML = `Previsto <b>${fmtMoney(x.amount, cur)}</b> em ${fmtDateBR(x.expectedDate)} · entra na conta <b>${esc(accountName(x.accountId))}</b>.<br>Se veio um valor diferente, ajuste abaixo.`;
   document.getElementById('rcValorLbl').textContent = `Valor recebido (${curLabel(cur)})`;
-  document.getElementById('rcValor').value = Math.round(x.amount*100)/100;
+  document.getElementById('rcValor').value = fmtBR(x.amount);
   document.getElementById('rcDate').value = todayISO();
   openModal('receiveModal');
 }
@@ -4862,7 +4883,7 @@ document.getElementById('receiveForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const x = getRcv().find(r=>r.id===receiveCtx);
   if(!x) { closeModal('receiveModal'); return; }
-  const valor = parseFloat(document.getElementById('rcValor').value);
+  const valor = numField('rcValor');
   const date = document.getElementById('rcDate').value;
   if(isNaN(valor) || valor<=0 || !date){ toast('Informe valor e data'); return; }
   const txId = uid();
@@ -5123,6 +5144,7 @@ function openFormPopup(cardId, title){
   const st = card.querySelector('.section-title');
   document.getElementById('formPopupTitle').textContent = (st && st.textContent.trim()) || title || card.dataset.title || '';
   openModal('formPopup');
+  updateAllValChips();
 }
 function closeFormPopup(silent){
   if(!popupState.card) return;
@@ -5220,6 +5242,101 @@ document.getElementById('defaultsForm').addEventListener('submit', (e)=>{
   renderAll();
   applyTxDefaults();
 });
+
+/* =====================================================================
+   Valores digitados (milhar/decimal) e dica da projeção
+   ===================================================================== */
+function fmtBR(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function round2(str){ return Number(Math.round(Number(str+'e2'))+'e-2'); }
+// Interpreta o que foi digitado: o separador mais à direita é o decimal quando há os dois ("4.035,30", "4,500.00").
+function parseMoneyInput(raw){
+  let t = String(raw==null?'':raw).trim().replace(/^R\$\s*/i,'').replace(/\s+/g,'');
+  if(!t) return null;
+  let neg = false;
+  if(t[0]==='-'){ neg = true; t = t.slice(1); }
+  if(!/^[\d.,]+$/.test(t) || !/\d/.test(t)) return null;
+  const dots = (t.match(/\./g)||[]).length, coms = (t.match(/,/g)||[]).length;
+  let dec = null, thou = null, ambiguous = false, alt = null;
+  const groupOk = (str, sep)=>{ const ps = str.split(sep); return ps[0].length>=1 && ps[0].length<=3 && ps.slice(1).every(x=>x.length===3); };
+  if(dots && coms){
+    dec = t.lastIndexOf('.') > t.lastIndexOf(',') ? '.' : ',';
+    thou = dec==='.' ? ',' : '.';
+    if(t.split(dec).length!==2) return null;
+  } else if(dots || coms){
+    const sep = dots ? '.' : ',', n = dots || coms, ps = t.split(sep);
+    if(n>1){ if(!groupOk(t,sep)) return null; thou = sep; }
+    else {
+      dec = sep;
+      // "4.500" / "4,500": pode ser decimal (4,5) ou milhar (4500). Vale o que foi escrito; a dica oferece o outro.
+      if(ps[1].length===3 && ps[0].length>=1 && ps[0].length<=3){ ambiguous = true; alt = ps[0]+ps[1]; }
+    }
+  }
+  let numStr = t;
+  if(thou) numStr = numStr.split(thou).join('');
+  if(dec) numStr = numStr.replace(dec,'.');
+  if(numStr.startsWith('.')) numStr = '0'+numStr;
+  if(!/^\d+(\.\d+)?$/.test(numStr)) return null;
+  const decimals = dec ? t.length - t.lastIndexOf(dec) - 1 : 0;
+  const rounded = decimals>2;
+  let value = round2(numStr); if(neg) value = -value;
+  const altValue = alt!==null ? round2(alt) : null;
+  const needsChip = ambiguous || ((thou!==null || rounded) && String(raw).trim()!==fmtBR(value));
+  return {value, ambiguous, altValue, rounded, needsChip};
+}
+function numField(id){
+  const r = parseMoneyInput(document.getElementById(id).value);
+  return r ? r.value : NaN;
+}
+const MONEY_IDS = ['txValor','edValor','recValor','rcvValor','lcValor','tfOut','tfIn','rcValor','qkValor','budLimite','invValor'];
+function updateValChip(id){
+  const el = document.getElementById(id), chip = document.querySelector(`[data-chip-for="${id}"]`);
+  if(!el || !chip) return;
+  const r = parseMoneyInput(el.value);
+  if(!r || !r.needsChip){ chip.style.display = 'none'; return; }
+  const chosen = r.ambiguous ? r.altValue : r.value;
+  chip.dataset.val = fmtBR(chosen);
+  chip.textContent = r.ambiguous
+    ? `Quis dizer ${fmtBR(r.altValue)}? Toque para confirmar (se não, vale ${fmtBR(r.value)})`
+    : `Entendi ${fmtBR(r.value)}${r.rounded ? ' (arredondado)' : ''} — toque para confirmar`;
+  chip.style.display = 'block';
+}
+function updateAllValChips(){ MONEY_IDS.forEach(updateValChip); }
+MONEY_IDS.forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>updateValChip(id));
+  document.querySelector(`[data-chip-for="${id}"]`).addEventListener('click', (e)=>{
+    const el = document.getElementById(id);
+    el.value = e.currentTarget.dataset.val;
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+    updateValChip(id);
+  });
+});
+document.addEventListener('reset', ()=>setTimeout(updateAllValChips, 0), true);
+
+/* ---- dica da projeção (mês a mês) ---- */
+const projState = {months:[], rep:BASE};
+function projMonthHTML(m){
+  const rep = projState.rep, net = m.in - m.out;
+  const outs = Object.entries(m.items).filter(([,v])=>v<0).sort((a,b)=>a[1]-b[1]).map(([k,v])=>`${fmtMoney(v,rep)} de ${esc(k)}`);
+  const ins = Object.entries(m.items).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`+${fmtMoney(v,rep)} de ${esc(k)}`);
+  return `<b>${m.label}</b>: saldo ${fmtMoney(m.balance,rep)}<br>Mês: entradas ${fmtMoney(m.in,rep)} − saídas ${fmtMoney(m.out,rep)} = <b style="color:${net>=0?'var(--income)':'var(--expense)'};">${net>=0?'+':''}${fmtMoney(net,rep)}</b>`
+    + (outs.length ? `<br>Gastos previstos: ${outs.join(', ')}` : '<br>Nenhum gasto previsto')
+    + (ins.length ? `<br>Entradas: ${ins.join(', ')}` : '');
+}
+function showProjTip(e){
+  const pc = document.getElementById('projChart'), tip = document.getElementById('projTip');
+  if(!tip) return;
+  const r = e.target.closest('[data-pm]');
+  if(!r){ tip.style.display = 'none'; return; }
+  tip.innerHTML = projMonthHTML(projState.months[+r.dataset.pm]);
+  tip.style.display = 'block';
+  const cr = pc.getBoundingClientRect();
+  let x = e.clientX - cr.left + 14; const y = e.clientY - cr.top + 14;
+  x = Math.max(0, Math.min(x, cr.width - tip.offsetWidth));
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+document.getElementById('projChart').addEventListener('mousemove', showProjTip);
+document.getElementById('projChart').addEventListener('click', showProjTip);
+document.getElementById('projChart').addEventListener('mouseleave', ()=>{ const t = document.getElementById('projTip'); if(t) t.style.display = 'none'; });
 
 /* ---------------- Master render ---------------- */
 function renderAll(){
