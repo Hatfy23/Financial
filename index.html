@@ -576,6 +576,7 @@ main{
 .inv-chip.pausada{color:var(--ink-faint);}
 
 .info-btn{background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:50%;width:18px;height:18px;font-size:11px;line-height:1;cursor:pointer;margin-left:6px;padding:0;vertical-align:middle;}
+.info-btn.has{border-color:var(--gold-stamp);color:var(--gold-stamp);}
 .info-btn:hover{color:var(--ink);border-color:var(--gold-stamp);}
 
 .view-actions{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
@@ -776,8 +777,8 @@ select option{background:var(--surface-2);}
     <div class="rates-strip" id="ratesStrip"></div>
     <div class="summary-strip">
       <div class="stamp-card saldo"><div class="label">Saldo atual <button type="button" class="info-btn" id="btnBalInfo" title="Ver o saldo após pagar as faturas">ⓘ</button></div><div class="value" id="sumSaldo">R$ 0,00</div></div>
-      <div class="stamp-card receitas"><div class="label">Receitas do mês</div><div class="value" id="sumReceitas">R$ 0,00</div></div>
-      <div class="stamp-card despesas"><div class="label">Despesas do mês</div><div class="value" id="sumDespesas">R$ 0,00</div><div class="meta" id="sumDespesasSplit"></div></div>
+      <div class="stamp-card receitas"><div class="label">Receitas do mês <button type="button" class="info-btn draft-info" title="Lançamentos rápidos ainda não confirmados">ⓘ</button></div><div class="value" id="sumReceitas">R$ 0,00</div></div>
+      <div class="stamp-card despesas"><div class="label">Despesas do mês <button type="button" class="info-btn draft-info" title="Lançamentos rápidos ainda não confirmados">ⓘ</button></div><div class="value" id="sumDespesas">R$ 0,00</div><div class="meta" id="sumDespesasSplit"></div></div>
       <div class="stamp-card investido"><div class="label">Total investido</div><div class="value" id="sumInvestido">R$ 0,00</div></div>
     </div>
 
@@ -1574,6 +1575,14 @@ select option{background:var(--surface-2);}
       <p class="hint" style="margin-top:8px;">A conta e o cartão escolhidos aparecem primeiro em todas as listas e já vêm selecionados nos formulários.</p>
       <button type="submit" class="btn full" style="margin-top:12px;">Salvar padrões</button>
     </form>
+  </div>
+</div>
+
+<!-- Drafts info modal -->
+<div class="modal-overlay" id="draftsInfoModal">
+  <div class="modal">
+    <div class="modal-head"><h3>⚡ Rápidos ainda não confirmados</h3><button class="modal-close" type="button" data-close-modal="draftsInfoModal">×</button></div>
+    <div id="draftsInfoBody"></div>
   </div>
 </div>
 
@@ -2550,6 +2559,7 @@ function renderDashboard(){
     `).join('');
   }
   renderDashReceivables(ctx);
+  updateDraftInfoButtons();
   renderDashHint(ctx);
 }
 
@@ -5337,6 +5347,45 @@ function showProjTip(e){
 document.getElementById('projChart').addEventListener('mousemove', showProjTip);
 document.getElementById('projChart').addEventListener('click', showProjTip);
 document.getElementById('projChart').addEventListener('mouseleave', ()=>{ const t = document.getElementById('projTip'); if(t) t.style.display = 'none'; });
+
+/* ---- lançamentos rápidos pendentes (informativo no painel) ---- */
+function draftsPending(){
+  const d = getDrafts();
+  const sel = t=>d.filter(x=>x.type===t && x.amount!=null);
+  return {inc: sel('income').reduce((s,x)=>s+x.amount,0), exp: sel('expense').reduce((s,x)=>s+x.amount,0),
+          nInc: sel('income').length, nExp: sel('expense').length, noAmt: d.filter(x=>x.amount==null).length, total: d.length};
+}
+function updateDraftInfoButtons(){
+  const dp = draftsPending();
+  const tip = dp.total
+    ? `Rápidos pendentes: receitas ${fmtMoney(dp.inc,BASE)} · despesas ${fmtMoney(dp.exp,BASE)}${dp.noAmt?` · ${dp.noAmt} sem valor`:''} (não entram nos totais até você ajustar e lançar)`
+    : 'Nenhum lançamento rápido pendente';
+  document.querySelectorAll('.draft-info').forEach(b=>{ b.title = tip; b.classList.toggle('has', dp.total>0); });
+}
+document.querySelectorAll('.draft-info').forEach(b=>b.addEventListener('click', ()=>{
+  const dp = draftsPending(), ctx = dashCtx();
+  let html;
+  if(!dp.total){
+    html = `<p class="imp-line">Nenhum lançamento rápido pendente.</p>`;
+  } else {
+    html = `<p class="imp-line">Receitas pendentes: <b style="color:var(--income);">+ ${fmtMoney(dp.inc,BASE)}</b> (${dp.nInc} lançamento(s))</p>
+      <p class="imp-line">Despesas pendentes: <b style="color:var(--expense);">− ${fmtMoney(dp.exp,BASE)}</b> (${dp.nExp} lançamento(s))</p>`
+      + (dp.noAmt ? `<p class="imp-line">${dp.noAmt} sem valor definido ainda.</p>` : '');
+    if(ctx.rep===BASE && (!ctx.filter || ctx.filter===BASE)){
+      const mt = monthTotals(currentMonthKey(), ctx);
+      html += `<p class="imp-line" style="border-top:1px solid var(--line);padding-top:8px;">Se todos fossem confirmados neste mês:<br>
+        Receitas do mês: <b>${fmtMoney(mt.receitas,BASE)}</b> → <b>${fmtMoney(mt.receitas+dp.inc,BASE)}</b><br>
+        Despesas do mês: <b>${fmtMoney(mt.despesas,BASE)}</b> → <b>${fmtMoney(mt.despesas+dp.exp,BASE)}</b></p>`;
+    }
+    html += `<p class="hint">Rápidos ainda não têm conta nem moeda, então os valores aparecem como digitados (em R$). Eles só entram nos totais, no saldo e no orçamento depois que você ajustar e lançar na aba ⚡ Rápidos.</p>
+      <button type="button" class="btn full" style="margin-top:10px;" id="btnGoDrafts">Ver na aba ⚡ Rápidos</button>`;
+  }
+  document.getElementById('draftsInfoBody').innerHTML = html;
+  const go = document.getElementById('btnGoDrafts');
+  if(go) go.addEventListener('click', ()=>{ closeModal('draftsInfoModal'); goTab('rapidos'); });
+  openModal('draftsInfoModal');
+}));
+document.getElementById('draftsInfoModal').addEventListener('mousedown', e=>{ if(e.target.id==='draftsInfoModal') closeModal('draftsInfoModal'); });
 
 /* ---------------- Master render ---------------- */
 function renderAll(){
