@@ -596,6 +596,17 @@ main{
 #projChart{position:relative;}
 .proj-tip{position:absolute;z-index:20;max-width:360px;background:var(--surface);border:1px solid var(--gold-stamp);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px;line-height:1.6;box-shadow:0 6px 20px rgba(0,0,0,.5);pointer-events:none;}
 
+.plan-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.plan-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px;}
+.plan-head .nm{font-family:var(--font-display);font-size:18px;font-weight:700;}
+.plan-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.plan-sub{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-faint);margin:16px 0 8px 0;display:flex;justify-content:space-between;}
+.plan-day{display:grid;grid-template-columns:54px 1fr auto;gap:8px;align-items:center;font-size:12.5px;margin-bottom:3px;color:var(--ink-dim);}
+.plan-day.today .dt{color:var(--gold-stamp);font-weight:700;}
+.plan-day.future{opacity:.5;}
+.plan-day .num{font-family:var(--font-mono);font-size:12px;text-align:right;}
+.plan-extra{font-size:11px;color:var(--gold-stamp);margin:0 0 6px 62px;}
+
 /* Modal */
 .modal-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,0.65);
@@ -727,6 +738,7 @@ select option{background:var(--surface-2);}
       <div class="nav-group-label">Financeiro</div>
       <button data-view="lancamentos" data-title="💸 Lançamentos">💸 Lançamentos</button>
       <button data-view="areceber" data-title="💰 A receber">💰 A receber</button>
+      <button data-view="planos" data-title="🧳 Planos">🧳 Planos</button>
       <button data-view="rapidos" data-title="⚡ Lançamentos rápidos">⚡ Rápidos<span class="nav-badge" id="navRapidosBadge" style="display:none;"></span></button>
       <button data-view="recorrentes" data-title="🔁 Recorrentes">🔁 Recorrentes</button>
       <button data-view="investimentos" data-title="📈 Investimentos">📈 Investimentos</button>
@@ -910,6 +922,32 @@ select option{background:var(--surface-2);}
       <div class="section-title"><span>Lançamentos rápidos pendentes</span><button class="btn small" id="btnNewQuickTab">⚡ Novo rápido</button></div>
       <p class="hint" style="margin:0 0 14px 0;">Registre na hora (com foto da nota, se quiser) e ajuste depois. Ao confirmar, vira um lançamento esporádico e a foto é apagada. Enquanto pendentes, não entram no saldo nem nas projeções.</p>
       <div id="draftList"></div>
+    </div>
+  </div>
+
+  <!-- PLANOS -->
+  <div class="view" id="view-planos">
+    <div class="view-actions"><button class="btn" type="button" data-popup="planFormCard" data-title="Novo plano">+ Novo plano</button></div>
+    <p class="hint" style="margin:0 0 14px 0;">Planos de gastos para um período (viagem, evento, feriado): teto do dia a dia, itens planejados e relatório. Os lançamentos do plano entram no saldo e nas despesas, mas não no orçamento mensal por categoria.</p>
+    <div id="planList"></div>
+    <details class="card" style="margin-top:8px;"><summary id="planArchSummary" style="cursor:pointer;font-weight:600;">Planos arquivados</summary><div id="planArchList" style="margin-top:12px;"></div></details>
+
+    <div class="card form-card" id="planFormCard" data-title="Novo plano">
+      <div class="section-title" id="planFormTitle">Novo plano</div>
+      <form id="planForm">
+        <div class="form-grid">
+          <div class="field" style="grid-column:1/-1;"><label>Nome</label><input type="text" id="planNome" required placeholder="Ex: Férias na Alemanha"></div>
+          <div class="field"><label>Início</label><input type="date" id="planStart" required></div>
+          <div class="field"><label>Fim</label><input type="date" id="planEnd" required></div>
+          <div class="field"><label>Moeda do plano</label><select id="planMoeda"></select></div>
+          <div class="field"><label>Teto do dia a dia (total)</label><input type="text" inputmode="decimal" autocomplete="off" id="planCap" required><button type="button" class="val-chip" data-chip-for="planCap" style="display:none;"></button></div>
+          <div class="field"><label>Teto por dia (opcional)</label><input type="text" inputmode="decimal" autocomplete="off" id="planDaily" placeholder="Total ÷ dias"><button type="button" class="val-chip" data-chip-for="planDaily" style="display:none;"></button></div>
+          <div class="field"><label>Notas</label><input type="text" id="planNota"></div>
+        </div>
+        <p class="hint" style="margin-top:8px;">O teto do dia a dia não inclui os itens planejados (passagem, imprevistos...), que você cadastra depois com barra própria.</p>
+        <button type="submit" class="btn full" id="planSubmit">Criar plano</button>
+        <button type="button" class="btn full secondary" id="planCancel" style="display:none;margin-top:8px;">Cancelar edição</button>
+      </form>
     </div>
   </div>
 
@@ -1586,6 +1624,55 @@ select option{background:var(--surface-2);}
   </div>
 </div>
 
+<!-- Plan spend modal -->
+<div class="modal-overlay" id="planSpendModal"><div class="modal">
+  <div class="modal-head"><h3 id="plSpTitle">Gasto do plano</h3><button class="modal-close" type="button" data-close-modal="planSpendModal">×</button></div>
+  <form id="planSpendForm"><div class="form-grid">
+    <div class="field"><label>Data</label><input type="date" id="plSpDate" required></div>
+    <div class="field"><label id="plSpValorLbl">Valor</label><input type="text" inputmode="decimal" autocomplete="off" id="plSpValor" required><button type="button" class="val-chip" data-chip-for="plSpValor" style="display:none;"></button></div>
+    <div class="field" style="grid-column:1/-1;"><label>Descrição</label><input type="text" id="plSpDesc" required placeholder="Ex: Jantar, metrô, museu..."></div>
+    <div class="field"><label>Categoria</label><select id="plSpCat"></select></div>
+    <div class="field"><label>Conta</label><select id="plSpConta"></select></div>
+    <div class="field" style="grid-column:1/-1;"><label>Cartão (opcional — vai para a fatura)</label><select id="plSpCard"></select></div>
+    <div class="field" style="grid-column:1/-1;"><label>Notas</label><input type="text" id="plSpNota"></div>
+  </div><button type="submit" class="btn full" style="margin-top:12px;">Lançar gasto</button></form>
+</div></div>
+
+<!-- Plan item modal -->
+<div class="modal-overlay" id="planItemModal"><div class="modal">
+  <div class="modal-head"><h3 id="plItTitle">Item planejado</h3><button class="modal-close" type="button" data-close-modal="planItemModal">×</button></div>
+  <form id="planItemForm"><div class="form-grid">
+    <div class="field" style="grid-column:1/-1;"><label>Descrição</label><input type="text" id="plItDesc" required placeholder="Ex: Passagem, levar o gato, hospedagem..."></div>
+    <div class="field"><label>Grupo</label><select id="plItGroup"><option value="antes">Antes da viagem</option><option value="imprevisto">Imprevisto planejado</option><option value="durante">Durante a viagem (extra)</option></select></div>
+    <div class="field"><label id="plItValorLbl">Valor planejado</label><input type="text" inputmode="decimal" autocomplete="off" id="plItValor" required><button type="button" class="val-chip" data-chip-for="plItValor" style="display:none;"></button></div>
+    <div class="field"><label>Pagar até (previsão)</label><input type="date" id="plItPay"></div>
+    <div class="field"><label>Dia de uso (opcional)</label><input type="date" id="plItUse"></div>
+    <div class="field" style="grid-column:1/-1;"><label>Categoria</label><select id="plItCat"></select></div>
+  </div>
+  <p class="hint" style="margin-top:8px;">Planejado não debita nada: só vira lançamento quando você clicar em "Realizar". Enquanto isso aparece na Projeção como gasto do plano.</p>
+  <button type="submit" class="btn full" style="margin-top:12px;">Salvar item</button></form>
+</div></div>
+
+<!-- Plan realize modal -->
+<div class="modal-overlay" id="planRealizeModal"><div class="modal">
+  <div class="modal-head"><h3 id="plRzTitle">Realizar</h3><button class="modal-close" type="button" data-close-modal="planRealizeModal">×</button></div>
+  <form id="planRealizeForm">
+    <p class="imp-line" id="plRzSummary"></p>
+    <div class="form-grid">
+      <div class="field"><label id="plRzValorLbl">Valor pago</label><input type="text" inputmode="decimal" autocomplete="off" id="plRzValor" required><button type="button" class="val-chip" data-chip-for="plRzValor" style="display:none;"></button></div>
+      <div class="field"><label>Data do pagamento</label><input type="date" id="plRzDate" required></div>
+      <div class="field" style="grid-column:1/-1;"><label>Conta</label><select id="plRzConta"></select></div>
+    </div>
+    <button type="submit" class="btn full" style="margin-top:12px;">Confirmar e debitar</button>
+  </form>
+</div></div>
+
+<!-- Plan report modal -->
+<div class="modal-overlay" id="planReportModal"><div class="modal wide">
+  <div class="modal-head"><h3 id="plRpTitle">Relatório</h3><button class="modal-close" type="button" data-close-modal="planReportModal">×</button></div>
+  <div id="plRpBody"></div>
+</div></div>
+
 <!-- Photo modal -->
 <div class="modal-overlay" id="photoModal">
   <div class="modal">
@@ -1848,7 +1935,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
 /* ---------------- Populate selects ---------------- */
 function fillCategorySelects(){
   const cats = Store.data.categories;
-  ['txCategoria','recCategoria','budCategoria','subParent','rcvCategoria'].forEach(id=>{
+  ['txCategoria','recCategoria','budCategoria','subParent','rcvCategoria','plSpCat','plItCat'].forEach(id=>{
     const sel = document.getElementById(id);
     const prev = sel.value;
     sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
@@ -1858,7 +1945,7 @@ function fillCategorySelects(){
 }
 function fillAccountSelects(){
   const accs = orderedAccounts();
-  ['txConta','recConta','cardConta','rcvConta'].forEach(id=>{
+  ['txConta','recConta','cardConta','rcvConta','plSpConta','plRzConta'].forEach(id=>{
     const sel = document.getElementById(id);
     const prev = sel.value;
     const multi = allCurrencies().length>1;
@@ -2432,7 +2519,7 @@ function subBreakdown(mKey, ctx){
 }
 function budgetSpent(b, expenseTxs, ctx){
   return expenseTxs
-    .filter(t=> t.category===b.category && (!b.subcategory || t.subcategory===b.subcategory))
+    .filter(t=> !t.planId && t.category===b.category && (!b.subcategory || t.subcategory===b.subcategory))
     .reduce((s,t)=>s+txAmt(t,ctx),0);
 }
 
@@ -2580,7 +2667,7 @@ function txRowHTML(t){
     <div class="tx-icon ${t.type}">${t.type==='income'?'↑':'↓'}</div>
     <div class="tx-main">
       <div class="desc">${t.description}</div>
-      <div class="meta"><span class="tag">${esc(catLabel(t.category, t.subcategory))}</span><span class="tag">${accountName(t.accountId)}</span>${(t.natureza==='fixo'||t.recurringId)?'<span class="tag">fixo</span>':''}${t.invoiceClose?'<span class="tag">pgto. fatura</span>':''}${faturaTag} ${new Date(t.date+'T12:00:00').toLocaleDateString('pt-BR')}</div>
+      <div class="meta"><span class="tag">${esc(catLabel(t.category, t.subcategory))}</span><span class="tag">${accountName(t.accountId)}</span>${(t.natureza==='fixo'||t.recurringId)?'<span class="tag">fixo</span>':''}${t.invoiceClose?'<span class="tag">pgto. fatura</span>':''}${t.planId?`<span class="tag">🧳 ${esc((getPlans().find(p=>p.id===t.planId)||{}).name||'plano')}</span>`:''}${faturaTag} ${new Date(t.date+'T12:00:00').toLocaleDateString('pt-BR')}</div>
       ${t.note ? `<div class="note">📝 ${esc(t.note)}</div>` : ''}
     </div>
     <div class="tx-amount ${t.type}">${cardPurchase?'':(t.type==='income'?'+':'-')} ${fmtMoney(t.amount, accCur(t.accountId))}</div>
@@ -2895,6 +2982,16 @@ function renderProjecao(){
         cashKey = (inf.due || inf.end).slice(0,7);
       }
       addFlow(cashKey, convertAmt(sgn*r.amount, cur, rep), card ? `fatura ${r.category}` : r.category);
+    });
+  });
+  getPlans().filter(pl=>pl.status!=='arquivado').forEach(pl=>{
+    if(ctx.filter && pl.currency!==ctx.filter) return;
+    pl.items.forEach(it=>{
+      const rem = planItemRemaining(pl, it);
+      if(rem<=0.004) return;
+      let key = (it.payDate || pl.start).slice(0,7);
+      if(key < monthKeys[0]) key = monthKeys[0];
+      addFlow(key, -convertAmt(rem, pl.currency, rep), `plano ${pl.name}`);
     });
   });
   Store.data.cards.forEach(card=>{
@@ -4453,7 +4550,7 @@ setTimeout(()=>{ updateDueAlerts(); tryOpenDueModal(); }, 5000);
 function curLabel(c){ return c==='BRL' ? 'R$' : c; }
 function fillCurrencySelects(){
   const curs = allCurrencies();
-  ['accMoeda','invMoeda'].forEach(id=>{
+  ['accMoeda','invMoeda','planMoeda'].forEach(id=>{
     const sel = document.getElementById(id), prev = sel.value;
     sel.innerHTML = curs.map(c=>`<option value="${c}">${c}</option>`).join('');
     sel.value = curs.includes(prev) ? prev : BASE;
@@ -4464,7 +4561,7 @@ function updateCurrencyLabels(){
     const el = document.getElementById(id), sel = document.getElementById(accSelId);
     if(el && sel && sel.value) el.textContent = `Valor (${curLabel(accCur(sel.value))})`;
   };
-  set('txValorLbl','txConta'); set('edValorLbl','edConta'); set('rcvValorLbl','rcvConta');
+  set('txValorLbl','txConta'); set('edValorLbl','edConta'); set('rcvValorLbl','rcvConta'); set('plSpValorLbl','plSpConta'); set('plRzValorLbl','plRzConta');
   const rl = document.getElementById('recValorLbl');
   if(rl){
     let acc = document.getElementById('recConta').value;
@@ -4475,7 +4572,7 @@ function updateCurrencyLabels(){
     if(acc) rl.textContent = `Valor (${curLabel(accCur(acc))})`;
   }
 }
-['txConta','recConta','edConta','rcvConta','recCard','recPay'].forEach(id=>document.getElementById(id).addEventListener('change', updateCurrencyLabels));
+['txConta','recConta','edConta','rcvConta','recCard','recPay','plSpConta','plRzConta'].forEach(id=>document.getElementById(id).addEventListener('change', updateCurrencyLabels));
 
 /* ---- cotações (Frankfurter) ---- */
 function parseSeries(json, quote){
@@ -5297,7 +5394,7 @@ function numField(id){
   const r = parseMoneyInput(document.getElementById(id).value);
   return r ? r.value : NaN;
 }
-const MONEY_IDS = ['txValor','edValor','recValor','rcvValor','lcValor','tfOut','tfIn','rcValor','qkValor','budLimite','invValor'];
+const MONEY_IDS = ['planCap','planDaily','plSpValor','plItValor','plRzValor','txValor','edValor','recValor','rcvValor','lcValor','tfOut','tfIn','rcValor','qkValor','budLimite','invValor'];
 function updateValChip(id){
   const el = document.getElementById(id), chip = document.querySelector(`[data-chip-for="${id}"]`);
   if(!el || !chip) return;
@@ -5387,6 +5484,280 @@ document.querySelectorAll('.draft-info').forEach(b=>b.addEventListener('click', 
 }));
 document.getElementById('draftsInfoModal').addEventListener('mousedown', e=>{ if(e.target.id==='draftsInfoModal') closeModal('draftsInfoModal'); });
 
+/* =====================================================================
+   Planos de gastos (viagens, eventos...) — Entrega 1
+   ===================================================================== */
+['planSpendModal','planItemModal','planRealizeModal','planReportModal'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('mousedown', e=>{ if(e.target===el) closeModal(id); });
+});
+const PLAN_GROUPS = {antes:'Antes da viagem', imprevisto:'Imprevistos planejados', durante:'Durante a viagem (extras)'};
+function getPlans(){ if(!Array.isArray(Store.data.plans)) Store.data.plans = []; return Store.data.plans; }
+function planDaysList(pl){ const out = []; let d = pl.start; for(let i=0;i<400 && d<=pl.end;i++){ out.push(d); d = addDaysISO(d,1); } return out; }
+function planSigned(t, pl){ const v = convertAmt(t.amount, accCur(t.accountId), pl.currency); return t.type==='income' ? -v : v; }
+function planItemRealized(pl, it){ return Store.data.transactions.filter(t=>t.planItemId===it.id).reduce((s,t)=>s+planSigned(t,pl),0); }
+function planItemRemaining(pl, it){ return Math.max(0, it.amount - planItemRealized(pl,it)); }
+function planStats(pl){
+  const days = planDaysList(pl), n = Math.max(1, days.length), cap = pl.cap;
+  const dailyCap = pl.dailyCap>0 ? pl.dailyCap : cap/n;
+  const txs = Store.data.transactions.filter(t=>t.planId===pl.id);
+  const perDay = {}; let totalDaily = 0;
+  txs.filter(t=>!t.planItemId).forEach(t=>{ const v = planSigned(t,pl); perDay[t.date] = (perDay[t.date]||0)+v; totalDaily += v; });
+  const items = pl.items.map(it=>{ const real = planItemRealized(pl,it); return {it, real, rem: Math.max(0, it.amount-real)}; });
+  const plannedTotal = items.reduce((s,x)=>s+x.it.amount,0), realizedItems = items.reduce((s,x)=>s+x.real,0);
+  const today = todayISO();
+  const elapsed = today<pl.start ? 0 : Math.min(n, daysBetween(pl.start, today)+1);
+  const projected = (elapsed>0 && today<=pl.end) ? totalDaily/elapsed*n : totalDaily;
+  const extras = {};
+  items.forEach(x=>{ if(x.it.useDate) (extras[x.it.useDate] = extras[x.it.useDate]||[]).push(x); });
+  return {days, n, cap, dailyCap, perDay, totalDaily, items, plannedTotal, realizedItems, elapsed, projected, extras, saldo: cap-totalDaily, grandTotal: totalDaily+realizedItems, txs};
+}
+const planOpen = {};
+function planBar(pct, h){ const cls = pct>=100 ? 'over' : (pct>=80 ? 'warn' : 'ok'); return `<div class="budget-track"${h?` style="height:${h}px;"`:''}><div class="budget-fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div>`; }
+function planCardHTML(pl, active){
+  const st = planStats(pl), f = v=>fmtMoney(v, pl.currency);
+  const pct = st.cap>0 ? st.totalDaily/st.cap*100 : 0;
+  const isOpen = planOpen[pl.id]!==undefined ? planOpen[pl.id] : getPlans().filter(x=>x.status!=='arquivado').length===1;
+  const today = todayISO();
+  let html = `<div class="plan-card">
+    <div class="plan-head"><div><div class="nm">🧳 ${esc(pl.name)}</div>
+      <div class="meta">${fmtDateBR(pl.start)} a ${fmtDateBR(pl.end)} · ${st.n} dia(s) · teto por dia ${f(st.dailyCap)}${pl.note?' · 📝 '+esc(pl.note):''}</div></div>
+      <button class="btn small secondary" onclick="planToggle('${pl.id}')">${isOpen?'Recolher':'Ver detalhes'}</button></div>
+    <div class="imp-line" style="margin-bottom:4px;"><b>Dia a dia:</b> ${f(st.totalDaily)} / ${f(st.cap)} · <b>${pct.toFixed(0)}%</b></div>
+    ${planBar(pct, 12)}
+    <div class="meta" style="margin-top:6px;">Saldo da viagem: <b style="color:${st.saldo>=0?'var(--income)':'var(--expense)'};">${f(st.saldo)}</b>${st.saldo<0?' (estourou o teto)':' ainda disponível'}`
+    + (st.elapsed>0 && today<=pl.end ? ` · no ritmo atual fecha em <b>${f(st.projected)}</b> (${st.cap>0?(st.projected/st.cap*100).toFixed(0):0}%)` : '') + `</div>`;
+  if(st.items.length) html += `<div class="meta" style="margin-top:4px;">Planejados: realizado <b>${f(st.realizedItems)}</b> de ${f(st.plannedTotal)} · total do plano (dia a dia + realizados): <b>${f(st.grandTotal)}</b></div>`;
+  if(active) html += `<div class="plan-actions"><button class="btn small" onclick="planSpend('${pl.id}')">+ Gasto</button><button class="btn small secondary" onclick="planAddItem('${pl.id}')">+ Item planejado</button><button class="btn small secondary" onclick="planReport('${pl.id}')">Relatório</button><button class="btn small secondary" onclick="planEdit('${pl.id}')">Editar</button><button class="btn small secondary" onclick="planArchive('${pl.id}',true)">Arquivar</button><button class="tx-del" onclick="planDelete('${pl.id}')" title="Excluir">✕</button></div>`;
+  if(isOpen){
+    html += `<div class="plan-sub"><span>Dia a dia</span><span>gasto / teto do dia</span></div>`;
+    html += pagedHTML('planDays_'+pl.id, st.days, 10, d=>{
+      const v = st.perDay[d]||0, dp = st.dailyCap>0 ? v/st.dailyCap*100 : 0;
+      const cls = d===today ? ' today' : (d>today && !v ? ' future' : '');
+      const ex = (st.extras[d]||[]).map(x=>`+ ${f(x.real||x.it.amount)} de ${esc(x.it.description)}${x.real?'':' (planejado)'}`).join(' · ');
+      return `<div class="plan-day${cls}"><span class="dt">${fmtShortBR(d)}</span>${planBar(dp)}<span class="num">${f(v)} / ${f(st.dailyCap)} · ${dp.toFixed(0)}%</span></div>${ex?`<div class="plan-extra">${ex}</div>`:''}`;
+    });
+    const outside = Object.keys(st.perDay).filter(d=>d<pl.start||d>pl.end);
+    if(outside.length) html += `<div class="meta">Gastos fora do período do plano contam no total: ${outside.map(fmtShortBR).join(', ')}.</div>`;
+    html += `<div class="plan-sub"><span>Itens planejados</span><span>${active?'<button class="btn small secondary" onclick="planAddItem(\''+pl.id+'\')">+ Item</button>':''}</span></div>`;
+    if(!st.items.length) html += `<div class="meta">Nenhum item planejado.</div>`;
+    Object.keys(PLAN_GROUPS).forEach(g=>{
+      const its = st.items.filter(x=>(x.it.group||'antes')===g);
+      if(!its.length) return;
+      const sum = its.reduce((a,x)=>a+x.it.amount,0), real = its.reduce((a,x)=>a+x.real,0);
+      html += `<div class="rec-group-head"><span>${PLAN_GROUPS[g]}</span><span class="num">${f(real)} de ${f(sum)}</span></div>`;
+      html += its.map(x=>{
+        const ip = x.it.amount>0 ? x.real/x.it.amount*100 : 0;
+        return `<div class="rec-item"><div><div class="desc">${esc(x.it.description)}</div>
+          <div class="meta">planejado ${f(x.it.amount)} · pago ${f(x.real)} · falta ${f(x.rem)}${x.it.payDate?' · pagar até '+fmtShortBR(x.it.payDate):''}${x.it.useDate?' · uso '+fmtShortBR(x.it.useDate):''}</div>${planBar(ip,6)}</div>
+          <span></span><div style="display:flex;gap:6px;">${active&&x.rem>0.004?`<button class="btn small" onclick="planRealize('${pl.id}','${x.it.id}')">Realizar</button>`:''}${active?`<button class="tx-del tx-edit" onclick="planEditItem('${pl.id}','${x.it.id}')" title="Editar">✎</button><button class="tx-del" onclick="planDelItem('${pl.id}','${x.it.id}')" title="Remover">✕</button>`:''}</div></div>`;
+      }).join('');
+    });
+    const txs = [...st.txs].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+    html += `<div class="plan-sub"><span>Lançamentos do plano</span><span>${txs.length}</span></div>`;
+    html += txs.length ? pagedHTML('planTx_'+pl.id, txs, 6, txRowHTML) : `<div class="meta">Nenhum lançamento ainda.</div>`;
+  }
+  return html + `</div>`;
+}
+function renderPlanos(){
+  const plans = getPlans();
+  const act = plans.filter(p=>p.status!=='arquivado'), arc = plans.filter(p=>p.status==='arquivado');
+  document.getElementById('planList').innerHTML = act.length ? act.map(p=>planCardHTML(p,true)).join('')
+    : `<div class="empty-state"><div class="stamp">Nenhum plano ativo</div></div>`;
+  document.getElementById('planArchSummary').textContent = `Planos arquivados (${arc.length})`;
+  document.getElementById('planArchList').innerHTML = arc.length ? arc.map(p=>{
+    const st = planStats(p), f = v=>fmtMoney(v,p.currency);
+    return `<div class="rec-item"><div><div class="desc">🧳 ${esc(p.name)}</div><div class="meta">${fmtDateBR(p.start)} a ${fmtDateBR(p.end)} · dia a dia ${f(st.totalDaily)} de ${f(st.cap)} · total ${f(st.grandTotal)}</div></div><span></span>
+      <div style="display:flex;gap:6px;"><button class="btn small secondary" onclick="planReport('${p.id}')">Relatório</button><button class="btn small secondary" onclick="planArchive('${p.id}',false)">Reabrir</button><button class="tx-del" onclick="planDelete('${p.id}')" title="Excluir">✕</button></div></div>`;
+  }).join('') : `<div class="meta">Nenhum plano arquivado.</div>`;
+}
+function planToggle(id){
+  const cur = planOpen[id]!==undefined ? planOpen[id] : getPlans().filter(x=>x.status!=='arquivado').length===1;
+  planOpen[id] = !cur; renderPlanos();
+}
+window.planToggle = planToggle;
+
+/* ---- formulário do plano ---- */
+let planEditId = null;
+function resetPlanForm(){
+  planEditId = null;
+  document.getElementById('planForm').reset();
+  document.getElementById('planStart').value = todayISO(); document.getElementById('planEnd').value = todayISO();
+  document.getElementById('planFormTitle').textContent = 'Novo plano';
+  document.getElementById('planSubmit').textContent = 'Criar plano';
+  document.getElementById('planCancel').style.display = 'none';
+  updateAllValChips();
+}
+FORM_ON_OPEN.planFormCard = resetPlanForm; FORM_ON_CLOSE.planFormCard = resetPlanForm;
+document.getElementById('planCancel').addEventListener('click', ()=>closeFormPopup());
+function planEdit(id){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  planEditId = id;
+  document.getElementById('planNome').value = pl.name; document.getElementById('planStart').value = pl.start; document.getElementById('planEnd').value = pl.end;
+  document.getElementById('planMoeda').value = pl.currency; document.getElementById('planCap').value = fmtBR(pl.cap);
+  document.getElementById('planDaily').value = pl.dailyCap ? fmtBR(pl.dailyCap) : ''; document.getElementById('planNota').value = pl.note || '';
+  document.getElementById('planFormTitle').textContent = 'Editar plano'; document.getElementById('planSubmit').textContent = 'Salvar alterações';
+  document.getElementById('planCancel').style.display = 'block';
+  openFormPopup('planFormCard');
+}
+window.planEdit = planEdit;
+document.getElementById('planForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('planNome').value.trim();
+  const start = document.getElementById('planStart').value, end = document.getElementById('planEnd').value;
+  const cap = numField('planCap'), daily = numField('planDaily');
+  if(!name || !start || !end || !(cap>0)){ toast('Preencha nome, datas e o teto do dia a dia'); return; }
+  if(end<start){ toast('O fim não pode ser antes do início'); return; }
+  const data = {name, start, end, currency: document.getElementById('planMoeda').value || BASE, cap, dailyCap: daily>0 ? daily : null, note: document.getElementById('planNota').value.trim() || null};
+  if(planEditId){ Object.assign(getPlans().find(p=>p.id===planEditId), data); toast('Plano atualizado'); }
+  else { getPlans().push({id: uid(), status:'ativo', items:[], ...data}); toast('Plano criado'); }
+  Store.save(); resetPlanForm(); renderAll();
+});
+function planArchive(id, on){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  pl.status = on ? 'arquivado' : 'ativo'; pl.archivedAt = on ? todayISO() : null;
+  Store.save(); closeModal('planReportModal'); toast(on ? 'Plano arquivado' : 'Plano reaberto'); renderAll();
+}
+function planDelete(id){
+  if(!confirm('Excluir o plano? Os lançamentos feitos nele continuam no extrato (só perdem a ligação com o plano).')) return;
+  Store.data.transactions.forEach(t=>{ if(t.planId===id){ delete t.planId; delete t.planItemId; } });
+  Store.data.plans = getPlans().filter(p=>p.id!==id);
+  Store.save(); renderAll();
+}
+window.planArchive = planArchive; window.planDelete = planDelete;
+
+/* ---- gasto do dia a dia ---- */
+let planCtx = null;
+function planSpend(id){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  planCtx = {id};
+  document.getElementById('plSpTitle').textContent = 'Gasto: ' + pl.name;
+  const today = todayISO();
+  document.getElementById('plSpDate').value = today<pl.start ? pl.start : (today>pl.end ? pl.end : today);
+  ['plSpValor','plSpDesc','plSpNota'].forEach(i=>{ document.getElementById(i).value = ''; });
+  // contas na moeda do plano primeiro
+  const accs = orderedAccounts().sort((a,b)=>((b.currency||BASE)===pl.currency)-((a.currency||BASE)===pl.currency));
+  document.getElementById('plSpConta').innerHTML = accs.map(a=>`<option value="${a.id}">${esc(a.name)} (${a.currency||BASE})</option>`).join('');
+  document.getElementById('plSpCard').innerHTML = `<option value="">— pagar direto da conta —</option>` + Store.data.cards.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  updateCurrencyLabels();
+  openModal('planSpendModal');
+}
+window.planSpend = planSpend;
+document.getElementById('plSpCard').addEventListener('change', ()=>{
+  const c = Store.data.cards.find(x=>x.id===document.getElementById('plSpCard').value);
+  if(c){ document.getElementById('plSpConta').value = c.accountId; updateCurrencyLabels(); }
+});
+document.getElementById('planSpendForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const pl = getPlans().find(p=>p.id===(planCtx||{}).id); if(!pl) return;
+  const date = document.getElementById('plSpDate').value, desc = document.getElementById('plSpDesc').value.trim(), v = numField('plSpValor');
+  if(!date || !desc || !(v>0)){ toast('Preencha data, descrição e valor'); return; }
+  let conta = document.getElementById('plSpConta').value;
+  const card = Store.data.cards.find(c=>c.id===document.getElementById('plSpCard').value);
+  if(card) conta = card.accountId;
+  Store.data.transactions.push({id: uid(), type:'expense', description: desc, amount: v, category: document.getElementById('plSpCat').value, subcategory:null,
+    date, natureza: card?'fatura':'esporadico', accountId: conta, cardId: card?card.id:null, pendingInvoice: !!card,
+    installmentGroup:null, installmentIndex:1, installmentTotal:1, planId: pl.id, note: document.getElementById('plSpNota').value.trim() || null, receiptPhoto:null});
+  Store.save(); closeModal('planSpendModal'); toast('Gasto lançado no plano'); renderAll();
+});
+
+/* ---- itens planejados ---- */
+let planItemEdit = null;
+function planAddItem(id){ planOpenItem(id, null); }
+function planEditItem(id, itemId){ planOpenItem(id, itemId); }
+function planOpenItem(id, itemId){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  planCtx = {id}; planItemEdit = itemId;
+  const it = itemId ? pl.items.find(x=>x.id===itemId) : null;
+  document.getElementById('plItTitle').textContent = (it?'Editar item: ':'Item planejado: ') + pl.name;
+  document.getElementById('plItValorLbl').textContent = `Valor planejado (${curLabel(pl.currency)})`;
+  document.getElementById('plItDesc').value = it ? it.description : '';
+  document.getElementById('plItGroup').value = it ? (it.group||'antes') : 'antes';
+  document.getElementById('plItValor').value = it ? fmtBR(it.amount) : '';
+  document.getElementById('plItPay').value = it ? (it.payDate||'') : '';
+  document.getElementById('plItUse').value = it ? (it.useDate||'') : '';
+  const cs = document.getElementById('plItCat');
+  if(it){ if(![...cs.options].some(o=>o.value===it.category)) cs.insertAdjacentHTML('beforeend',`<option value="${esc(it.category)}">${esc(it.category)}</option>`); cs.value = it.category; }
+  openModal('planItemModal');
+}
+window.planAddItem = planAddItem; window.planEditItem = planEditItem;
+document.getElementById('planItemForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const pl = getPlans().find(p=>p.id===(planCtx||{}).id); if(!pl) return;
+  const desc = document.getElementById('plItDesc').value.trim(), v = numField('plItValor');
+  if(!desc || !(v>0)){ toast('Informe descrição e valor planejado'); return; }
+  const data = {description: desc, group: document.getElementById('plItGroup').value, amount: v, category: document.getElementById('plItCat').value,
+    payDate: document.getElementById('plItPay').value || null, useDate: document.getElementById('plItUse').value || null};
+  if(planItemEdit) Object.assign(pl.items.find(x=>x.id===planItemEdit), data); else pl.items.push({id: uid(), ...data});
+  Store.save(); closeModal('planItemModal'); toast('Item salvo'); renderAll();
+});
+function planDelItem(id, itemId){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  const it = pl.items.find(x=>x.id===itemId); if(!it) return;
+  if(!confirm(`Remover "${it.description}"? Lançamentos já realizados continuam no extrato.`)) return;
+  Store.data.transactions.forEach(t=>{ if(t.planItemId===itemId) delete t.planItemId; });
+  pl.items = pl.items.filter(x=>x.id!==itemId);
+  Store.save(); renderAll();
+}
+window.planDelItem = planDelItem;
+
+/* ---- realizar (debita de verdade) ---- */
+function planRealize(id, itemId){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  const it = pl.items.find(x=>x.id===itemId); if(!it) return;
+  planCtx = {id, itemId};
+  const rem = planItemRemaining(pl,it);
+  document.getElementById('plRzTitle').textContent = 'Realizar: ' + it.description;
+  document.getElementById('plRzSummary').innerHTML = `Planejado <b>${fmtMoney(it.amount,pl.currency)}</b> · falta <b>${fmtMoney(rem,pl.currency)}</b>. Só debita da conta ao confirmar.`;
+  const accs = orderedAccounts().sort((a,b)=>((b.currency||BASE)===pl.currency)-((a.currency||BASE)===pl.currency));
+  document.getElementById('plRzConta').innerHTML = accs.map(a=>`<option value="${a.id}">${esc(a.name)} (${a.currency||BASE})</option>`).join('');
+  document.getElementById('plRzDate').value = todayISO();
+  document.getElementById('plRzValor').value = (accs[0] && (accs[0].currency||BASE)===pl.currency) ? fmtBR(rem) : '';
+  updateCurrencyLabels();
+  openModal('planRealizeModal');
+}
+window.planRealize = planRealize;
+document.getElementById('planRealizeForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const pl = getPlans().find(p=>p.id===(planCtx||{}).id); if(!pl) return;
+  const it = pl.items.find(x=>x.id===planCtx.itemId); if(!it) return;
+  const v = numField('plRzValor'), date = document.getElementById('plRzDate').value;
+  if(!(v>0) || !date){ toast('Informe valor e data'); return; }
+  Store.data.transactions.push({id: uid(), type:'expense', description: it.description, amount: v, category: it.category, subcategory:null, date,
+    natureza:'esporadico', accountId: document.getElementById('plRzConta').value, installmentGroup:null, installmentIndex:1, installmentTotal:1,
+    planId: pl.id, planItemId: it.id, note: null, receiptPhoto:null});
+  Store.save(); closeModal('planRealizeModal'); toast('Debitado da conta e registrado no plano'); renderAll();
+});
+
+/* ---- relatório de viagem ---- */
+function planReport(id){
+  const pl = getPlans().find(p=>p.id===id); if(!pl) return;
+  const st = planStats(pl), f = v=>fmtMoney(v,pl.currency);
+  const days = st.days, spentDays = days.map(d=>[d, st.perDay[d]||0]);
+  const worst = spentDays.slice().sort((a,b)=>b[1]-a[1])[0];
+  const over = spentDays.filter(([,v])=>v>st.dailyCap).length;
+  const pctT = st.cap>0 ? st.totalDaily/st.cap*100 : 0;
+  const cats = {}; st.txs.forEach(t=>{ cats[t.category] = (cats[t.category]||0) + planSigned(t,pl); });
+  const catRows = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const catTot = catRows.reduce((a,[,v])=>a+v,0) || 1;
+  const ln = x=>`<p class="imp-line">${x}</p>`;
+  let html = ln(`${fmtDateBR(pl.start)} a ${fmtDateBR(pl.end)} · ${st.n} dia(s) · moeda ${pl.currency}${pl.status==='arquivado'?' · <b>arquivado</b>':''}`)
+    + `<div class="plan-sub"><span>Dia a dia</span></div>`
+    + ln(`Gasto <b>${f(st.totalDaily)}</b> de ${f(st.cap)} (<b>${pctT.toFixed(0)}%</b>) · ${st.saldo>=0?'sobrou':'estourou'} <b style="color:${st.saldo>=0?'var(--income)':'var(--expense)'};">${f(Math.abs(st.saldo))}</b>`)
+    + ln(`Média por dia: <b>${f(st.totalDaily/st.n)}</b> (teto ${f(st.dailyCap)}) · dias acima do teto: <b>${over}</b>${worst&&worst[1]>0?` · dia mais caro: <b>${fmtShortBR(worst[0])}</b> (${f(worst[1])})`:''}`)
+    + `<div class="plan-sub"><span>Planejados</span></div>`
+    + (st.items.length ? st.items.map(x=>ln(`${esc(x.it.description)} <span class="tag">${PLAN_GROUPS[x.it.group||'antes']}</span> — planejado ${f(x.it.amount)} · realizado <b>${f(x.real)}</b>${x.rem>0.004?` · falta ${f(x.rem)}`:' ✓'}`)).join('') : ln('Nenhum item planejado.'))
+    + `<div class="plan-sub"><span>Total do plano</span></div>`
+    + ln(`Dia a dia ${f(st.totalDaily)} + planejados realizados ${f(st.realizedItems)} = <b>${f(st.grandTotal)}</b>`)
+    + `<div class="plan-sub"><span>Por categoria</span></div>`
+    + (catRows.length ? catRows.map(([c,v])=>ln(`${esc(c)}: <b>${f(v)}</b> (${(v/catTot*100).toFixed(0)}%)`)).join('') : ln('Sem lançamentos.'))
+    + `<button type="button" class="btn full secondary" style="margin-top:12px;" onclick="planArchive('${pl.id}',${pl.status!=='arquivado'})">${pl.status==='arquivado'?'Reabrir plano':'Arquivar plano'}</button>`;
+  document.getElementById('plRpTitle').textContent = '🧳 Relatório: ' + pl.name;
+  document.getElementById('plRpBody').innerHTML = html;
+  openModal('planReportModal');
+}
+window.planReport = planReport;
+
 /* ---------------- Master render ---------------- */
 function renderAll(){
   if(popupSubmitting && popupState.card) closeFormPopup(true);
@@ -5401,6 +5772,7 @@ function renderAll(){
   renderRapidos();
   renderRecorrentes();
   renderReceivables();
+  renderPlanos();
   renderInvestimentos();
   renderOrcamento();
   renderProjecao();
